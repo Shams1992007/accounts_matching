@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: acccounts_matching_db
+    restart: always
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: gift_transformer
+    ports:
+      - "5433:5432"
+    volumes:
+      - acccounts_matching_pgdata:/var/lib/postgresql/data
+
+volumes:
+  acccounts_matching_pgdata:
