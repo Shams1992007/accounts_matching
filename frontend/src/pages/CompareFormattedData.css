@@ -1,0 +1,19 @@
+.comparePage {
+  max-width: 1600px;
+  margin: 30px auto;
+  padding: 0 16px 40px;
+}
+
+.compareSimpleBox {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.compareError {
+  color: crimson;
+  margin: 12px 0;
+}

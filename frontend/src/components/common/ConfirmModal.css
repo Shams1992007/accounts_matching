@@ -1,0 +1,72 @@
+.confirmOverlay{
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.45);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 999;
+}
+
+.confirmBox{
+background: #1a1a1a;
+border-radius: 14px;
+padding: 26px;
+width: 420px;
+max-width: 92%;
+box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+animation: confirmPop .18s ease;
+}
+
+@keyframes confirmPop{
+from{
+transform: scale(.95);
+opacity: .6;
+}
+to{
+transform: scale(1);
+opacity: 1;
+}
+}
+
+.confirmBox h3{
+margin: 0 0 10px;
+}
+
+.confirmBox p{
+margin: 0 0 20px;
+opacity: .8;
+}
+
+.confirmActions{
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+}
+
+.confirmCancel{
+padding: 8px 14px;
+border-radius: 8px;
+border: 1px solid #d1d5db;
+background: #1a1a1a;
+cursor: pointer;
+}
+
+.confirmPrimary{
+padding: 8px 14px;
+border-radius: 8px;
+border: none;
+background: #111827;
+color: white;
+cursor: pointer;
+}
+
+.confirmDanger{
+padding: 8px 14px;
+border-radius: 8px;
+border: none;
+background: #dc2626;
+color: white;
+cursor: pointer;
+}
+

@@ -1,0 +1,49 @@
+.compareSetupPanel {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  background: #1a1a1a;
+}
+
+.compareSetupTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.compareSetupSub {
+  margin-top: 4px;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.compareSetupMinimum {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.compareSetupList {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.compareSetupRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 10px;
+}
+
+.compareSetupRow input,
+.compareSetupRow select {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .compareSetupRow {
+    grid-template-columns: 1fr;
+  }
+}

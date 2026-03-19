@@ -1,0 +1,20 @@
+.compareTabs {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.compareTabs button {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  background: #1a1a1a;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.compareTabs .compareTabActive {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}

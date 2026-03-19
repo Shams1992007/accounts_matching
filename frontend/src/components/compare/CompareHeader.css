@@ -1,0 +1,17 @@
+.compareHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.compareHeaderTitle {
+  margin: 0;
+}
+
+.compareHeaderSub {
+  margin-top: 4px;
+  opacity: 0.75;
+  font-size: 14px;
+}

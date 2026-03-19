@@ -1,0 +1,95 @@
+.formatPanel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.formatPanelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.formatPanelHead h3 {
+  margin: 0;
+}
+
+.formatPanelStatus {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.formatPanelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.formatPanelLabel {
+  font-size: 13px;
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+
+.formatPanelSub {
+  margin-top: 12px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.formatPanelActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.formatPrimaryBtn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+}
+
+.formatPrimaryBtnDisabled {
+  background: #e5e7eb;
+  color: #111827;
+  cursor: not-allowed;
+}
+
+.formatWarn {
+  font-size: 13px;
+  color: #b45309;
+}
+
+.formatRowsPage {
+  margin-left: auto;
+}
+
+.formatOk {
+  color: green;
+  margin-top: 10px;
+}
+
+.formatErr {
+  color: crimson;
+  margin-top: 10px;
+}
+
+.formatSortRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.formatFileInfo {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.8;
+}

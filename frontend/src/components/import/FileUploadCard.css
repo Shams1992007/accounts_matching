@@ -1,0 +1,16 @@
+.uploadCard {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.uploadInput {
+  display: block;
+  margin-top: 10px;
+}
+
+.uploadFileName {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.8;
+}

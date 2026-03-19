@@ -1,0 +1,27 @@
+.tableWrap {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.dataTable {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.dataTable th {
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  padding: 8px;
+  white-space: nowrap;
+}
+
+.dataTable td {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 8px;
+  white-space: nowrap;
+}
+
+.tableEmpty {
+  margin-top: 10px;
+  opacity: 0.7;
+}

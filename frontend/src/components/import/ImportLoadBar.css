@@ -1,0 +1,37 @@
+.boxCard {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.loadBarRow {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.loadSelect {
+  min-width: 420px;
+}
+
+.darkBtn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+}
+
+.disabledBtn {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.warnText {
+  margin-top: 10px;
+  color: #b45309;
+}

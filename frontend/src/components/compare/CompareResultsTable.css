@@ -1,0 +1,55 @@
+.compareResultsWrap {
+  margin-top: 16px;
+}
+
+.compareResultsInfo {
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.compareResultsTableWrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #1a1a1a;
+}
+
+.compareResultsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.compareResultsTable th,
+.compareResultsTable td {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 8px;
+  white-space: nowrap;
+  text-align: left;
+  vertical-align: top;
+}
+
+.compareResultsTable thead th {
+  background: #1a1a1a;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.compareSpacer {
+  min-width: 12px;
+  width: 12px;
+  background: #fff;
+}
+
+.compareTrue {
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+  text-align: center;
+}
+
+.compareFalse {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+  text-align: center;
+}
+

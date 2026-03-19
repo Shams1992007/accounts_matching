@@ -1,0 +1,42 @@
+.formatPage {
+  max-width: 1300px;
+  margin: 30px auto;
+  padding: 0 16px;
+}
+
+.formatPageSmall {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.formatPageHead {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.formatPageHead h2 {
+  margin: 0;
+}
+
+.formatBackTop {
+  margin-left: auto;
+}
+
+.formatPageSub {
+  opacity: 0.8;
+  margin-top: 6px;
+}
+
+.formatPageGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.formatPageError {
+  color: crimson;
+  margin-top: 10px;
+}

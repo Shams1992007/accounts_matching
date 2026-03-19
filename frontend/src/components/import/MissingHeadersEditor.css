@@ -1,0 +1,29 @@
+.missingHeadersBox {
+  border: 1px solid #f59e0b;
+  background: #1a1a1a;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.missingHeadersSub {
+  margin-top: 6px;
+  opacity: 0.8;
+}
+
+.missingHeadersGrid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.missingHeaderRow {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.missingHeaderLabel {
+  font-size: 13px;
+}

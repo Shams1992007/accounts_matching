@@ -1,0 +1,97 @@
+.compareUnmatchedWrap {
+  display: grid;
+  gap: 16px;
+}
+
+.compareManualPairBox {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+}
+
+.compareManualPairSub {
+  margin-top: 4px;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.compareManualPairRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.compareManualPairsList {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.compareManualPairItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.compareUnmatchedGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.compareUnmatchedBox {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  min-width: 0;
+}
+
+.compareUnmatchedBox h3 {
+  margin: 0;
+}
+
+.compareUnmatchedCount {
+  margin-top: 4px;
+  margin-bottom: 12px;
+  opacity: 0.75;
+  font-size: 14px;
+}
+
+.compareUnmatchedTableWrap {
+  overflow-x: auto;
+}
+
+.compareMiniTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.compareMiniTable th,
+.compareMiniTable td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  text-align: left;
+  vertical-align: top;
+}
+
+.compareMiniTable thead th {
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .compareUnmatchedGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .compareManualPairRow {
+    grid-template-columns: 1fr;
+  }
+}
