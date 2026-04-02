@@ -79,13 +79,6 @@
   background: linear-gradient(135deg, #145230 0%, #0f3d24 100%);
 }
 
-.btn-pdf {
-  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
-}
-.btn-pdf:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a71d2a 0%, #8b1824 100%);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .compareExportBar {

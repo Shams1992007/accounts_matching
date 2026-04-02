@@ -10,7 +10,7 @@ import {
   getDefaultCompareFields,
 } from "../utils/compareUtils";
 import "./CompareFormattedData.css";
-import { exportCSV, exportExcel, exportPDF } from "../utils/exportUtils";
+import { exportCSV, exportExcel } from "../utils/exportUtils";
 
 export default function CompareFormattedData({
   importMeta,
@@ -81,20 +81,6 @@ export default function CompareFormattedData({
     }
   };
 
-  const handleExportPDF = () => {
-    try {
-      exportPDF(
-        finalResult,
-        compareFields,
-        leftPanel?.headers || [],
-        rightPanel?.headers || []
-      );
-    } catch (err) {
-      console.error("PDF Export Error:", err);
-      alert("Failed to export PDF: " + err.message);
-    }
-  };
-
   if (!importMeta?.importId || !leftPanel?.rows?.length || !rightPanel?.rows?.length) {
     return (
       <div className="comparePage">
@@ -144,13 +130,7 @@ export default function CompareFormattedData({
         >
           📈 Excel
         </button>
-        <button 
-          className="btn-export btn-pdf" 
-          onClick={handleExportPDF}
-          disabled={!finalResult?.matchedRows?.length}
-        >
-          📄 PDF
-        </button>
+
       </div>
 
       <CompareTabs activeTab={activeTab} onChange={setActiveTab} />
