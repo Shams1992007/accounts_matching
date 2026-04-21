@@ -4,6 +4,13 @@
   padding: 12px;
 }
 
+.formatPanelLoading {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  padding: 2rem;
+  text-align: center;
+}
+
 .formatPanelHead {
   display: flex;
   justify-content: space-between;

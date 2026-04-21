@@ -1,6 +1,6 @@
 import express from "express";
 import { pool } from "../db.js";
-import { FORMATS, toInt } from "../utils/importHelpers.js";
+import { toInt } from "../utils/importHelpers.js";
 
 const router = express.Router();
 
@@ -37,15 +37,23 @@ router.put("/:importId/mappings/:panelKey", async (req, res) => {
     return res.status(400).json({ error: "fileSide must be A or B" });
   }
 
-  if (!FORMATS[formatKey]) {
-    return res.status(400).json({ error: "Invalid formatKey" });
-  }
-
-  const requiredHeaders = FORMATS[formatKey].headers;
-  for (const h of requiredHeaders) {
-    if (!String(mapping?.[h] || "").trim()) {
-      return res.status(400).json({ error: `Missing mapping for ${h}` });
+  try {
+    const fmtRow = await pool.query(
+      `SELECT headers FROM formats WHERE key = $1`,
+      [formatKey]
+    );
+    if (!fmtRow.rows.length) {
+      return res.status(400).json({ error: `Unknown format key: ${formatKey}` });
     }
+
+    const requiredHeaders = fmtRow.rows[0].headers;
+    for (const h of requiredHeaders) {
+      if (!String(mapping?.[h] || "").trim()) {
+        return res.status(400).json({ error: `Missing mapping for ${h}` });
+      }
+    }
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed to validate format" });
   }
 
   try {

@@ -1,17 +1,6 @@
 import XLSX from "xlsx";
 import Papa from "papaparse";
 
-export const FORMATS = {
-  QBO: {
-    label: "QBO format",
-    headers: ["Transaction date", "Name", "Line description", "Category", "Account", "Amount"],
-  },
-  LGL: {
-    label: "LGL format",
-    headers: ["Gift date", "Name", "Employer/Organization", "Gift category", "Payment Type", "Amount"],
-  },
-};
-
 export function extOf(name = "") {
   const i = name.lastIndexOf(".");
   return i >= 0 ? name.slice(i + 1).toLowerCase() : "";

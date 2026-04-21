@@ -1,40 +1,22 @@
-import { findHeader, parseMaybeAmount, parseMaybeDate } from "./importUtils";
-
-export const FORMATS = {
-  QBO: {
-    label: "QBO format",
-    headers: [
-      "Transaction date",
-      "Name",
-      "Line description",
-      "Category",
-      "Account",
-      "Amount",
-    ],
-  },
-  LGL: {
-    label: "LGL format",
-    headers: [
-      "Gift date",
-      "Name",
-      "Employer/Organization",
-      "Gift category",
-      "Payment Type",
-      "Amount",
-    ],
-  },
-};
+import { parseMaybeAmount, parseMaybeDate } from "./importUtils";
 
 export function getFormatSortOptions(headers = []) {
   const opts = [];
+  const seen = new Set();
 
-  const dateHeader = findHeader(headers, ["Gift date", "Transaction date", "Date"]);
-  const nameHeader = findHeader(headers, ["Name", "Full Name"]);
-  const amountHeader = findHeader(headers, ["Amount"]);
-
-  if (dateHeader) opts.push({ value: dateHeader, label: "Date" });
-  if (nameHeader) opts.push({ value: nameHeader, label: "Name" });
-  if (amountHeader) opts.push({ value: amountHeader, label: "Amount" });
+  for (const h of headers) {
+    const lower = h.toLowerCase();
+    if (lower.includes("date") && !seen.has("date")) {
+      opts.push({ value: h, label: "Date" });
+      seen.add("date");
+    } else if (lower.includes("name") && !seen.has("name")) {
+      opts.push({ value: h, label: "Name" });
+      seen.add("name");
+    } else if (lower.includes("amount") && !seen.has("amount")) {
+      opts.push({ value: h, label: "Amount" });
+      seen.add("amount");
+    }
+  }
 
   return opts;
 }

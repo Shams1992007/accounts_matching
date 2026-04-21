@@ -3,12 +3,12 @@ import Pager from "../common/Pager";
 import MappingRow from "./MappingRow";
 import FormattedTable from "./FormattedTable";
 import {
-  FORMATS,
   buildFormattedRows,
   compareFormattedRows,
   getFormatSortOptions,
   getSavedPanel,
 } from "../../utils/formatUtils";
+import { fetchFormats } from "../../services/formatsApi";
 import "./FormatPanel.css";
 
 export default function FormatPanel({
@@ -20,6 +20,9 @@ export default function FormatPanel({
   onFormattedChange,
 }) {
   const saved = getSavedPanel(importMeta, panelKey);
+
+  const [formats, setFormats] = useState([]);
+  const [formatsLoading, setFormatsLoading] = useState(true);
 
   const [fileSide, setFileSide] = useState(saved?.fileSide || defaultFileSide);
   const [formatKey, setFormatKey] = useState(saved?.formatKey || defaultFormatKey);
@@ -38,6 +41,23 @@ export default function FormatPanel({
 
   const lastSentRef = useRef("");
   const lastRowsFetchKeyRef = useRef("");
+
+  // Load formats once on mount
+  useEffect(() => {
+    fetchFormats()
+      .then((data) => {
+        setFormats(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setFormats([]))
+      .finally(() => setFormatsLoading(false));
+  }, []);
+
+  // When formats load, ensure formatKey is valid; fall back to first format
+  useEffect(() => {
+    if (formatsLoading || formats.length === 0) return;
+    const exists = formats.some((f) => f.key === formatKey);
+    if (!exists) setFormatKey(formats[0].key);
+  }, [formatsLoading, formats, formatKey]);
 
   useEffect(() => {
     const savedAgain = getSavedPanel(importMeta, panelKey);
@@ -62,7 +82,8 @@ export default function FormatPanel({
 
   const file = fileSide === "A" ? importMeta?.fileA : importMeta?.fileB;
   const sourceHeaders = file?.headers || [];
-  const formatHeaders = FORMATS[formatKey]?.headers || [];
+  const activeFormat = formats.find((f) => f.key === formatKey) || null;
+  const formatHeaders = activeFormat?.headers || [];
 
   const totalPages = useMemo(() => {
     const total = file?.rowCount || 0;
@@ -93,19 +114,13 @@ export default function FormatPanel({
       const r = await fetch(`/api/import/${importMeta.importId}/mappings/${panelKey}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileSide,
-          formatKey,
-          mapping,
-        }),
+        body: JSON.stringify({ fileSide, formatKey, mapping }),
       });
 
       const text = await r.text();
       const data = text ? JSON.parse(text) : null;
 
-      if (!r.ok) {
-        throw new Error(data?.error || "Failed to save mapping");
-      }
+      if (!r.ok) throw new Error(data?.error || "Failed to save mapping");
 
       setConfirmed(true);
       setPage(1);
@@ -125,7 +140,6 @@ export default function FormatPanel({
 
     const fetchKey = `${file.fileId}::${page}::${limit}`;
     if (lastRowsFetchKeyRef.current === fetchKey) return;
-
     lastRowsFetchKeyRef.current = fetchKey;
 
     const run = async () => {
@@ -136,11 +150,7 @@ export default function FormatPanel({
         );
         const text = await r.text();
         const data = text ? JSON.parse(text) : null;
-
-        if (!r.ok) {
-          throw new Error(data?.error || "Failed to load rows");
-        }
-
+        if (!r.ok) throw new Error(data?.error || "Failed to load rows");
         setRowsResp(data);
       } catch (e) {
         setErr(String(e.message || e));
@@ -151,9 +161,7 @@ export default function FormatPanel({
   }, [confirmed, file?.fileId, page, limit]);
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
+    if (page > totalPages) setPage(totalPages);
   }, [totalPages, page]);
 
   const formattedRows = useMemo(() => {
@@ -204,7 +212,6 @@ export default function FormatPanel({
     });
 
     if (lastSentRef.current === signature) return;
-
     lastSentRef.current = signature;
     onFormattedChange(panelKey, payload);
   }, [
@@ -223,6 +230,10 @@ export default function FormatPanel({
     page,
     limit,
   ]);
+
+  if (formatsLoading) {
+    return <div className="formatPanel"><div className="formatPanelLoading">Loading formats…</div></div>;
+  }
 
   return (
     <div className="formatPanel">
@@ -260,6 +271,7 @@ export default function FormatPanel({
             value={formatKey}
             onChange={(e) => {
               setFormatKey(e.target.value);
+              setMapping({});
               setConfirmed(false);
               setRowsResp(null);
               setPage(1);
@@ -269,8 +281,11 @@ export default function FormatPanel({
               lastRowsFetchKeyRef.current = "";
             }}
           >
-            <option value="QBO">{FORMATS.QBO.label}</option>
-            <option value="LGL">{FORMATS.LGL.label}</option>
+            {formats.map((f) => (
+              <option key={f.key} value={f.key}>
+                {f.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -369,7 +384,7 @@ export default function FormatPanel({
           <Pager page={page} setPage={setPage} totalPages={totalPages} />
 
           <div className="formatFileInfo">
-            <b>{file?.name}</b> → <span>{FORMATS[formatKey]?.label}</span>
+            <b>{file?.name}</b> → <span>{activeFormat?.label}</span>
           </div>
 
           <FormattedTable headers={formatHeaders} rows={formattedRows} />
