@@ -95,7 +95,7 @@ export function normalizeCategory(v) {
 
 export function normalizeNameLike(v) {
   return normalizeText(v)
-    .replace(/[.,]/g, "")
+    .replace(/[.,:;]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

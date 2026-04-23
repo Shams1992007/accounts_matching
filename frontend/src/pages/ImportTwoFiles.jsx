@@ -65,6 +65,14 @@ export default function ImportTwoFiles({ importMeta: importMetaProp, onImported,
             onReplace={vm.replaceImportFiles}
             deleting={vm.deleting}
             onDelete={() => vm.setConfirmDelete(true)}
+            skipRowsA={vm.skipRowsA}
+            setSkipRowsA={vm.setSkipRowsA}
+            skipRowsB={vm.skipRowsB}
+            setSkipRowsB={vm.setSkipRowsB}
+            applyingSkipRowsA={vm.applyingSkipRowsA}
+            applyingSkipRowsB={vm.applyingSkipRowsB}
+            onApplySkipRowsA={() => vm.applySkipRows("A")}
+            onApplySkipRowsB={() => vm.applySkipRows("B")}
           />
 
           <div className="importTopSpace">

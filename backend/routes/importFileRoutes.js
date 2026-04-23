@@ -126,6 +126,87 @@ router.patch("/file/:fileId/headers", async (req, res) => {
   }
 });
 
+router.post("/file/:fileId/apply-skip-rows", async (req, res) => {
+  const fileId = toInt(req.params.fileId, 0);
+  if (!fileId) return res.status(400).json({ error: "Invalid fileId" });
+
+  const skipRows = toInt(req.body?.skipRows, 0);
+  if (skipRows < 1) return res.status(400).json({ error: "skipRows must be at least 1" });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const fileMeta = await client.query(
+      `SELECT id, import_id, headers, row_count FROM import_files WHERE id = $1`,
+      [fileId]
+    );
+    if (!fileMeta.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const currentHeaders = Array.isArray(fileMeta.rows[0].headers) ? fileMeta.rows[0].headers : [];
+
+    // The row at index (skipRows - 1) holds the real header values
+    const headerRow = await client.query(
+      `SELECT data FROM import_rows WHERE file_id = $1 AND row_index = $2`,
+      [fileId, skipRows - 1]
+    );
+    if (!headerRow.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: `No row found at index ${skipRows - 1} — skipRows value too large` });
+    }
+
+    const headerData = headerRow.rows[0].data || {};
+    const newHeaders = currentHeaders.map((h) => {
+      const val = String(headerData[h] ?? "").trim();
+      return val || h;
+    });
+
+    // Remap and re-index all rows that come after the skipped rows
+    const dataRows = await client.query(
+      `SELECT row_index, data FROM import_rows
+       WHERE file_id = $1 AND row_index >= $2
+       ORDER BY row_index`,
+      [fileId, skipRows]
+    );
+
+    // Delete all old rows
+    await client.query(`DELETE FROM import_rows WHERE file_id = $1`, [fileId]);
+
+    // Re-insert with remapped keys and shifted indexes
+    for (const row of dataRows.rows) {
+      const oldData = row.data || {};
+      const newData = {};
+      for (let i = 0; i < currentHeaders.length; i++) {
+        newData[newHeaders[i]] = oldData[currentHeaders[i]] ?? "";
+      }
+      const newIndex = row.row_index - skipRows;
+      await client.query(
+        `INSERT INTO import_rows (file_id, row_index, data) VALUES ($1, $2, $3::jsonb)`,
+        [fileId, newIndex, JSON.stringify(newData)]
+      );
+    }
+
+    const newRowCount = dataRows.rows.length;
+    await client.query(
+      `UPDATE import_files SET headers = $1::jsonb, row_count = $2 WHERE id = $3`,
+      [JSON.stringify(newHeaders), newRowCount, fileId]
+    );
+
+    await client.query("COMMIT");
+
+    const updatedMeta = await getImportMeta(client, fileMeta.rows[0].import_id);
+    return res.json(updatedMeta);
+  } catch (e) {
+    await client.query("ROLLBACK");
+    return res.status(500).json({ error: e?.message || "apply-skip-rows failed" });
+  } finally {
+    client.release();
+  }
+});
+
 router.get("/file/:fileId/rows", async (req, res) => {
   const fileId = toInt(req.params.fileId, 0);
   if (!fileId) return res.status(400).json({ error: "Invalid fileId" });

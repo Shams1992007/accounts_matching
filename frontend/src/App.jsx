@@ -4,6 +4,7 @@ import ImportTwoFiles from "./pages/ImportTwoFiles";
 import FormatTwoFiles from "./pages/FormatTwoFiles";
 import CompareFormattedData from "./pages/CompareFormattedData";
 import ManageFormats from "./pages/ManageFormats";
+import UserGuide from "./pages/UserGuide";
 import "./App.css";
 
 function getUrlParams() {
@@ -47,7 +48,8 @@ export default function App() {
     const { page: urlPage, importId } = getUrlParams();
 
     if (!importId) {
-      setPageInner(urlPage === "formats" ? "formats" : "import");
+      const staticPage = urlPage === "formats" || urlPage === "guide" ? urlPage : "import";
+      setPageInner(staticPage);
       setBootstrapping(false);
       return;
     }
@@ -115,6 +117,12 @@ export default function App() {
         >
           Manage Formats
         </button>
+        <button
+          className={`appNavBtn ${page === "guide" ? "appNavActive" : ""}`}
+          onClick={() => goTo("guide")}
+        >
+          User Guide
+        </button>
       </nav>
 
       {page === "import" && (
@@ -143,6 +151,8 @@ export default function App() {
       )}
 
       {page === "formats" && <ManageFormats />}
+
+      {page === "guide" && <UserGuide />}
     </>
   );
 }

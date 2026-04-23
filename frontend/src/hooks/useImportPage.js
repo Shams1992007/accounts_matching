@@ -6,6 +6,7 @@ import {
   isBlankHeaderKey,
 } from "../utils/importUtils";
 import {
+  applySkipRowsApi,
   createImportApi,
   deleteImportApi,
   fetchFileRows,
@@ -21,6 +22,11 @@ export default function useImportPage({ importMetaProp, onImported }) {
 
   const [replaceFileA, setReplaceFileA] = useState(null);
   const [replaceFileB, setReplaceFileB] = useState(null);
+
+  const [skipRowsA, setSkipRowsA] = useState(1);
+  const [skipRowsB, setSkipRowsB] = useState(1);
+  const [applyingSkipRowsA, setApplyingSkipRowsA] = useState(false);
+  const [applyingSkipRowsB, setApplyingSkipRowsB] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [replacing, setReplacing] = useState(false);
@@ -272,6 +278,31 @@ export default function useImportPage({ importMetaProp, onImported }) {
     }
   };
 
+  const applySkipRows = async (side) => {
+    clearMessages();
+    const file = side === "A" ? importMeta?.fileA : importMeta?.fileB;
+    const skipRows = side === "A" ? skipRowsA : skipRowsB;
+    const setApplying = side === "A" ? setApplyingSkipRowsA : setApplyingSkipRowsB;
+
+    if (!file?.fileId) {
+      setErr("No file loaded.");
+      return;
+    }
+
+    setApplying(true);
+    try {
+      const data = await applySkipRowsApi(file.fileId, skipRows);
+      setImportMetaLocal(data);
+      onImported?.(data);
+      setRowsResp(null);
+      setMsg(`Skip rows applied to File ${side}.`);
+    } catch (e) {
+      setErr(String(e.message || e));
+    } finally {
+      setApplying(false);
+    }
+  };
+
   useEffect(() => {
     if (!activeFile?.fileId) return;
 
@@ -307,6 +338,14 @@ export default function useImportPage({ importMetaProp, onImported }) {
     setReplaceFileA,
     replaceFileB,
     setReplaceFileB,
+
+    skipRowsA,
+    setSkipRowsA,
+    skipRowsB,
+    setSkipRowsB,
+    applyingSkipRowsA,
+    applyingSkipRowsB,
+    applySkipRows,
 
     loading,
     replacing,

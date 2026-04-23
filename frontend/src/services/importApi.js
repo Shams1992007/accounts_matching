@@ -45,6 +45,16 @@ export async function replaceImportFilesApi(importId, fileA, fileB) {
   return getJsonOrThrow(r);
 }
 
+export async function applySkipRowsApi(fileId, skipRows) {
+  const r = await fetch(`/api/import/file/${fileId}/apply-skip-rows`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skipRows }),
+  });
+
+  return getJsonOrThrow(r);
+}
+
 export async function deleteImportApi(importId) {
   const r = await fetch(`/api/import/${importId}`, {
     method: "DELETE",

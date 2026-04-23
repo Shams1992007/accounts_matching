@@ -92,9 +92,17 @@ export function addDerivedFieldsToRow(data = {}, headers = []) {
   return out;
 }
 
-export function parseCsv(buffer) {
+export function parseCsv(buffer, skipRows = 0) {
   const text = buffer.toString("utf8");
-  const res = Papa.parse(text, { header: true, skipEmptyLines: true });
+  const skip = Math.max(0, Math.trunc(skipRows));
+
+  let source = text;
+  if (skip > 0) {
+    const lines = text.split(/\r?\n/);
+    source = lines.slice(skip).join("\n");
+  }
+
+  const res = Papa.parse(source, { header: true, skipEmptyLines: true });
 
   if (res.errors?.length) {
     throw new Error(res.errors[0].message || "CSV parse error");
@@ -111,7 +119,7 @@ export function parseCsv(buffer) {
   return { headers, rows };
 }
 
-export function parseExcel(buffer) {
+export function parseExcel(buffer, skipRows = 0) {
   const wb = XLSX.read(buffer, {
     type: "buffer",
     cellDates: true,
@@ -121,31 +129,33 @@ export function parseExcel(buffer) {
   if (!sheetName) throw new Error("Excel file has no sheets");
 
   const ws = wb.Sheets[sheetName];
+  const skip = Math.max(0, Math.trunc(skipRows));
 
   const rows = XLSX.utils.sheet_to_json(ws, {
     defval: "",
     raw: false,
     dateNF: "m/d/yyyy",
+    ...(skip > 0 ? { range: skip } : {}),
   });
 
   const headers = rows.length ? Object.keys(rows[0]) : [];
   return { headers, rows };
 }
 
-export function parseFile(file) {
+export function parseFile(file, skipRows = 0) {
   const name = file?.originalname || "file";
   const ext = extOf(name);
 
   if (ext === "csv" || file.mimetype?.includes("csv")) {
-    return { kind: "csv", ...parseCsv(file.buffer) };
+    return { kind: "csv", ...parseCsv(file.buffer, skipRows) };
   }
 
   if (ext === "xlsx" || ext === "xls") {
-    return { kind: "excel", ...parseExcel(file.buffer) };
+    return { kind: "excel", ...parseExcel(file.buffer, skipRows) };
   }
 
   try {
-    return { kind: "csv", ...parseCsv(file.buffer) };
+    return { kind: "csv", ...parseCsv(file.buffer, skipRows) };
   } catch (_) {
     // ignore fallback
   }
