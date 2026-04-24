@@ -71,11 +71,14 @@ export default function UserGuide() {
 
         <div className="ugCallout ugCalloutWarning">
           <strong>Missing headers?</strong> If the file has title rows above the real column
-          headers (e.g. a report title on row 1), a yellow warning box appears. Look at the table,
-          find which row contains the real column names, and enter that row number in{" "}
-          <em>Real headers are in row #</em>. The preview updates automatically as you type —
-          you can also press <strong>Enter</strong> or click outside the field to trigger it
-          immediately. Once the preview looks correct, click <strong>Load Now</strong> to apply.
+          headers (e.g. a report title on row 1), a yellow warning box appears. To find the correct
+          row number, <strong>look at the table displayed on screen</strong> — do not use the row
+          numbers from your original Excel or CSV file, as they may differ from what the app shows
+          after parsing. Find the row in the on-screen table that contains the real column names,
+          note that row number, and enter it in <em>Real headers are in row #</em>. The preview
+          updates automatically as you type — you can also press <strong>Enter</strong> or click
+          outside the field to trigger it immediately. Once the preview looks correct, click{" "}
+          <strong>Load Now</strong> to apply.
         </div>
 
         <div className="ugCallout ugCalloutInfo">
@@ -163,6 +166,64 @@ export default function UserGuide() {
           <li>
             A mismatch on a single field does not mean the pair is wrong — two other fields may
             have matched to justify the pairing.
+          </li>
+        </ol>
+
+        <h3 className="ugSubTitle">3b-i — Row classification colors</h3>
+        <p className="ugSectionDesc">
+          Each matched row is color-coded based on how well the fields agree:
+        </p>
+        <ul className="ugList">
+          <li>
+            <strong>No highlight (white/default)</strong> — <em>Truth</em>: all compared fields
+            matched.
+          </li>
+          <li>
+            <strong>Blue</strong> — <em>Conditional Truth</em>: Name matched only via the
+            Employer/Organization fallback field (not the primary Name field).
+          </li>
+          <li>
+            <strong>Red</strong> — <em>False</em>: one or more compared fields did not match.
+          </li>
+          <li>
+            <strong>Green</strong> — <em>Edited → Truth</em>: the row was corrected by editing
+            and now fully matches.
+          </li>
+        </ul>
+
+        <h3 className="ugSubTitle">3b-ii — Filtering results</h3>
+        <ol className="ugList">
+          <li>
+            Use the filter bar above the table to narrow results:{" "}
+            <strong>All</strong>, <strong>Truth</strong>, <strong>Conditional Truth</strong>, or{" "}
+            <strong>False</strong>.
+          </li>
+          <li>
+            Each button shows a live count of rows in that category.
+          </li>
+        </ol>
+
+        <h3 className="ugSubTitle">3b-iii — Editing rows &amp; version history</h3>
+        <ol className="ugList">
+          <li>
+            Rows classified as <em>Conditional Truth</em> or <em>False</em> (and already-edited
+            rows) show an <strong>Edit</strong> button.
+          </li>
+          <li>
+            Clicking <strong>Edit</strong> opens inline edit mode — all left/right cells become
+            inputs and the comparison columns update live as you type.
+          </li>
+          <li>
+            Click <strong>Save</strong> to re-score and save the edited version, or{" "}
+            <strong>Cancel</strong> to discard changes.
+          </li>
+          <li>
+            If editing brings a row to full agreement it turns <strong>green</strong>.
+          </li>
+          <li>
+            Hover over any edited row to see the full version history: what type each version was,
+            field match results, and exactly what changed between versions. Edit history is
+            preserved across page refreshes.
           </li>
         </ol>
 
