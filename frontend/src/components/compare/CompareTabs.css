@@ -3,6 +3,16 @@
   gap: 10px;
   margin: 16px 0;
   flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 480px) {
+  .compareTabs button {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
 }
 
 .compareTabs button {

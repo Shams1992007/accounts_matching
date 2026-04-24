@@ -17,6 +17,12 @@
   margin-top: 16px;
 }
 
+@media (max-width: 600px) {
+  .replaceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .actionRow {
   margin-top: 16px;
   display: flex;

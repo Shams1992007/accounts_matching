@@ -9,3 +9,14 @@
 .mappingLabel {
   font-size: 14px;
 }
+
+@media (max-width: 480px) {
+  .mappingRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .mappingLabel {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+}

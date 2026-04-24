@@ -271,7 +271,7 @@ export default function ManageFormats() {
       ) : formats.length === 0 ? (
         <div className="mfEmpty">No formats yet. Create one above.</div>
       ) : (
-        <table className="mfTable">
+        <div className="mfTableWrap"><table className="mfTable">
           <thead>
             <tr>
               <th>Label</th>
@@ -313,7 +313,7 @@ export default function ManageFormats() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
 
       <ConfirmModal

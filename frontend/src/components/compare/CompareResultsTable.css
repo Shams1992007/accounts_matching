@@ -9,6 +9,7 @@
 
 .compareResultsTableWrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #1a1a1a;

@@ -72,9 +72,10 @@ export default function UserGuide() {
         <div className="ugCallout ugCalloutWarning">
           <strong>Missing headers?</strong> If the file has title rows above the real column
           headers (e.g. a report title on row 1), a yellow warning box appears. Look at the table,
-          find which row contains the real column names, enter that row number in{" "}
-          <em>Real headers are in row #</em>, and click <strong>Load Now</strong>. A preview shows
-          what the new headers will look like before you commit.
+          find which row contains the real column names, and enter that row number in{" "}
+          <em>Real headers are in row #</em>. The preview updates automatically as you type —
+          you can also press <strong>Enter</strong> or click outside the field to trigger it
+          immediately. Once the preview looks correct, click <strong>Load Now</strong> to apply.
         </div>
 
         <div className="ugCallout ugCalloutInfo">
@@ -265,8 +266,10 @@ export default function UserGuide() {
             <div className="ugTipTitle">File has title rows at the top</div>
             <div className="ugTipBody">
               After import, if missing headers are detected, use the <em>Real headers are in
-              row #</em> control to point to the correct row. The preview will confirm the new
-              column names before you apply.
+              row #</em> control to point to the correct row. The preview updates automatically
+              as you type. You can also press <strong>Enter</strong> or click outside the field
+              to trigger it immediately. The preview confirms the new column names before you
+              click <strong>Load Now</strong>.
             </div>
           </div>
           <div className="ugTip">

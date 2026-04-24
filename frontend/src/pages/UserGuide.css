@@ -156,6 +156,16 @@
 }
 
 @media (max-width: 700px) {
+  .ugWrap {
+    padding-bottom: 32px;
+  }
+  .ugTitle {
+    font-size: 1.4rem;
+  }
+  .ugSection {
+    padding: 14px 16px;
+    margin-top: 24px;
+  }
   .ugTipsGrid {
     grid-template-columns: 1fr;
   }

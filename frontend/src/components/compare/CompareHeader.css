@@ -4,6 +4,18 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .compareHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .compareHeaderTitle {
+    font-size: 1.1rem;
+  }
 }
 
 .compareHeaderTitle {

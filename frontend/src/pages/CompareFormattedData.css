@@ -80,6 +80,17 @@
 }
 
 /* Responsive */
+@media (max-width: 600px) {
+  .comparePage {
+    margin: 12px auto;
+    padding: 0 12px 24px;
+  }
+  .compareSimpleBox {
+    padding: 16px;
+    margin: 16px auto;
+  }
+}
+
 @media (max-width: 768px) {
   .compareExportBar {
     flex-direction: column;

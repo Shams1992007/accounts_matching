@@ -8,6 +8,20 @@ Typical use case: matching a bank export (QBO format) against a donations ledger
 
 ---
 
+## Deployment
+
+| Layer | URL / Port |
+|---|---|
+| Frontend (Nginx → dist) | http://15.235.216.232:3001 |
+| Backend API (PM2) | port 5020 |
+
+**PM2 process name:** `accounts-backend`  
+**Nginx config:** `/etc/nginx/sites-enabled/accounts-matching`  
+**After any frontend change:** `npm run build` inside `frontend/`, Nginx serves from `frontend/dist/` automatically.  
+**After any backend change:** `pm2 restart accounts-backend`
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -33,6 +47,7 @@ Typical use case: matching a bank export (QBO format) against a donations ledger
 - Backend parses headers and all rows, inserts everything into Postgres
 - Frontend shows raw rows with pagination and sorting
 - If any headers are missing (blank `__EMPTY_N` columns), user can name them in-place
+- **Missing headers editor**: user types a row number in *Real headers are in row #* — preview fires automatically via debounce (500 ms), on Enter, on blur, or via the explicit **Preview** button beside the input. The input starts empty (no forced default).
 - Previous import sessions are listed; old ones can be replaced or deleted
 
 ### Step 2 — Format (`FormatTwoFiles` page)
@@ -54,6 +69,10 @@ Typical use case: matching a bank export (QBO format) against a donations ledger
 - Unmatched rows appear in a separate tab for **manual pairing**
 - Export shows matched + unmatched side-by-side with per-field match flags
 
+### User Guide (`UserGuide` page)
+- Static reference page explaining all 4 steps, tips, and common issues
+- Accessible from the top nav
+
 ---
 
 ## Navigation & URL Persistence
@@ -66,6 +85,7 @@ The app uses URL params to persist state across refreshes:
 | `?page=format&importId=5` | Format page |
 | `?page=compare&importId=5` | Compare page |
 | `?page=formats` | Manage Formats page |
+| `?page=guide` | User Guide page |
 
 - `importMeta` is re-fetched from the backend on refresh using the URL `importId`
 - `formattedPanels` (compare page data) is cached in `sessionStorage` keyed by importId
@@ -94,7 +114,7 @@ Summary/totals rows are automatically filtered out of exports.
 ```
 accounts_matching/
 ├── backend/
-│   ├── server.js              # Express entry point (port 5020); creates formats table on startup
+│   ├── server.js              # Express entry point (port 5020); runs initDb() on startup
 │   ├── db.js                  # Postgres connection pool
 │   ├── importRoutes.js        # Import route aggregator
 │   ├── routes/
@@ -102,21 +122,28 @@ accounts_matching/
 │   │   ├── importCrudRoutes.js    # Create/list/delete imports, upload files
 │   │   ├── importFileRoutes.js    # View rows, rename headers
 │   │   └── importMappingRoutes.js # Save/load format mappings (validates against DB formats)
+│   ├── migrations/
+│   │   ├── schema.sql             # Full idempotent schema (safe to re-run)
+│   │   └── 001_add_formats_table.sql
 │   ├── services/
 │   │   └── importMetaService.js   # Decorated import metadata (auto First+Last → Name)
 │   └── utils/
 │       └── importHelpers.js       # File parsing, batch insert helpers
 │
 ├── frontend/src/
-│   ├── App.jsx                    # Top nav + 4-page shell + URL persistence
+│   ├── App.jsx                    # Top nav + 5-page shell + URL persistence
 │   ├── pages/
 │   │   ├── ImportTwoFiles.jsx
 │   │   ├── FormatTwoFiles.jsx
 │   │   ├── CompareFormattedData.jsx
-│   │   └── ManageFormats.jsx      # Format CRUD UI
+│   │   ├── ManageFormats.jsx      # Format CRUD UI
+│   │   └── UserGuide.jsx          # Static help/reference page
 │   ├── components/
 │   │   ├── common/            # DataTable, Pager, ConfirmModal
-│   │   ├── import/            # FileUploadCard, HeaderEditor, ViewerControls
+│   │   ├── import/
+│   │   │   ├── FileUploadCard.jsx
+│   │   │   ├── MissingHeadersEditor.jsx  # Row-number input with debounce + Enter + blur + Preview button
+│   │   │   └── LoadedImportActions.jsx
 │   │   ├── format/            # FormatPanel, MappingRow, FormattedTable
 │   │   └── compare/           # CompareSetup, ResultsTable, UnmatchedPanel
 │   ├── services/
@@ -145,11 +172,13 @@ accounts_matching/
 | `import_mappings` | Saved mappings (panel_key, file_side, format_key, mapping JSONB) |
 | `formats` | User-defined formats (key, label, headers JSONB array) |
 
-The `formats` table is created automatically on backend startup. QBO and LGL are seeded once via `ON CONFLICT DO NOTHING`.
+The `formats` table is created automatically on backend startup via `initDb()`. QBO and LGL are seeded once via `ON CONFLICT DO NOTHING`. The full schema is also in `backend/migrations/schema.sql` (idempotent — safe to re-run).
+
+**DB connection:** configured in `backend/.env` via `DATABASE_URL`.
 
 ---
 
-## Running the App
+## Running Locally
 
 Requires a local Postgres instance configured in `backend/.env`:
 
@@ -162,19 +191,13 @@ Then in two terminals:
 
 ```bash
 # Terminal 1 — backend
-cd backend
-npm install
-npm run dev
-```
+cd backend && npm install && npm run dev
 
-```bash
 # Terminal 2 — frontend
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
-- Frontend: http://localhost:5173
+- Frontend dev server: http://localhost:5173
 - Backend API: http://localhost:5020
 
 ---
@@ -183,6 +206,7 @@ npm run dev
 
 - [x] File upload (CSV + XLSX) with batch Postgres insert
 - [x] Missing header detection and rename UI
+- [x] *Real headers are in row #* — preview triggers via debounce, Enter, blur, or explicit Preview button; input starts empty
 - [x] Dynamic format system — create, edit, delete formats in the UI (stored in DB)
 - [x] QBO and LGL auto-seeded on first startup
 - [x] Column mapping UI with persistence per import
@@ -194,3 +218,4 @@ npm run dev
 - [x] Import session management (list, replace, delete)
 - [x] URL-based navigation persistence (refresh-safe on all pages)
 - [x] sessionStorage cache for compare page panels
+- [x] User Guide page with step-by-step instructions and tips

@@ -24,6 +24,16 @@
   align-items: center;
 }
 
+@media (max-width: 480px) {
+  .missingHeaderRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .skipRowsRow {
+    flex-wrap: wrap;
+  }
+}
+
 .missingHeaderLabel {
   font-size: 13px;
 }
@@ -46,6 +56,27 @@
   width: 60px;
   padding: 2px 4px;
   font-size: 13px;
+}
+
+.previewBtn {
+  padding: 3px 10px;
+  font-size: 12px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 5px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.previewBtn:hover:not(:disabled) {
+  background: #3a3a3a;
+  border-color: #888;
+  color: #fff;
+}
+
+.previewBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .skipRowsPreview {

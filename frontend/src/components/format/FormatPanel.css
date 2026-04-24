@@ -33,6 +33,17 @@
   margin-top: 12px;
 }
 
+@media (max-width: 480px) {
+  .formatPanelGrid {
+    grid-template-columns: 1fr;
+  }
+  .formatPanelHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
 .formatPanelLabel {
   font-size: 13px;
   opacity: 0.75;

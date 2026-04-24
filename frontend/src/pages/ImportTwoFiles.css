@@ -10,6 +10,15 @@
   gap: 16px;
 }
 
+@media (max-width: 600px) {
+  .importPage {
+    margin: 16px auto;
+  }
+  .importUploadGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .importTopSpace {
   margin-top: 16px;
 }
