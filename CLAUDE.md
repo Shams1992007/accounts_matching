@@ -69,6 +69,27 @@ Typical use case: matching a bank export (QBO format) against a donations ledger
 - Unmatched rows appear in a separate tab for **manual pairing**
 - Export shows matched + unmatched side-by-side with per-field match flags
 
+#### Row classification & colors (`CompareResultsTable`)
+| Color | Type | Meaning |
+|---|---|---|
+| No highlight | **Truth** | All compare fields matched |
+| Blue | **Conditional Truth** | Name matched via Employer/Organization fallback |
+| Red | **False** | One or more compare fields did not match |
+| Green | **Edited → Truth** | Row was corrected by editing and now fully matches |
+
+#### Filtering
+- Four filter buttons above the table: **All / Truth / Conditional Truth / False** (each shows count)
+- Filtering updates row counts live; table maintains column min-widths so layout is stable at any row count
+
+#### Row editing & history
+- **Edit** button appears on every Conditional Truth and False row (and on green/edited rows for further correction)
+- Clicking opens inline edit mode — all left/right cells become inputs; compare field columns update live as you type
+- **Save** re-scores the pair and appends a new version to the history; **Cancel** discards changes
+- A row edited N times has N+1 versions stored (original + each edit)
+- If editing brings a row to Truth it turns **green**
+- Hovering any edited row shows the full version history: what type each version was, field match results, and exactly what changed between versions
+- Edit history is persisted to the DB (`row_edits` table) — survives page refresh
+
 ### User Guide (`UserGuide` page)
 - Static reference page explaining all 4 steps, tips, and common issues
 - Accessible from the top nav
@@ -121,7 +142,8 @@ accounts_matching/
 │   │   ├── formatRoutes.js        # CRUD for formats (/api/formats)
 │   │   ├── importCrudRoutes.js    # Create/list/delete imports, upload files
 │   │   ├── importFileRoutes.js    # View rows, rename headers
-│   │   └── importMappingRoutes.js # Save/load format mappings (validates against DB formats)
+│   │   ├── importMappingRoutes.js # Save/load format mappings (validates against DB formats)
+│   │   └── rowEditRoutes.js       # GET/PUT row edit history per pair (/api/import/:id/row-edits)
 │   ├── migrations/
 │   │   ├── schema.sql             # Full idempotent schema (safe to re-run)
 │   │   └── 001_add_formats_table.sql
@@ -148,7 +170,8 @@ accounts_matching/
 │   │   └── compare/           # CompareSetup, ResultsTable, UnmatchedPanel
 │   ├── services/
 │   │   ├── importApi.js       # Fetch calls for imports
-│   │   └── formatsApi.js      # Fetch calls for formats CRUD
+│   │   ├── formatsApi.js      # Fetch calls for formats CRUD
+│   │   └── rowEditsApi.js     # Fetch/save row edit history
 │   ├── hooks/
 │   │   └── useImportPage.js   # State management for import page
 │   └── utils/
@@ -171,8 +194,9 @@ accounts_matching/
 | `import_rows` | All raw rows (JSONB data per row, 500-row batch inserts) |
 | `import_mappings` | Saved mappings (panel_key, file_side, format_key, mapping JSONB) |
 | `formats` | User-defined formats (key, label, headers JSONB array) |
+| `row_edits` | Edit history per matched pair (import_id, pair_id, versions JSONB array) |
 
-The `formats` table is created automatically on backend startup via `initDb()`. QBO and LGL are seeded once via `ON CONFLICT DO NOTHING`. The full schema is also in `backend/migrations/schema.sql` (idempotent — safe to re-run).
+All tables are created automatically on backend startup via `initDb()`. QBO and LGL are seeded once via `ON CONFLICT DO NOTHING`. The full schema is also in `backend/migrations/schema.sql` (idempotent — safe to re-run).
 
 **DB connection:** configured in `backend/.env` via `DATABASE_URL`.
 
@@ -219,3 +243,8 @@ cd frontend && npm install && npm run dev
 - [x] URL-based navigation persistence (refresh-safe on all pages)
 - [x] sessionStorage cache for compare page panels
 - [x] User Guide page with step-by-step instructions and tips
+- [x] Compare page row classification — Truth (no highlight), Conditional Truth (blue), False (red)
+- [x] Compare page filter bar — All / Truth / Conditional Truth / False with live counts
+- [x] Inline row editing for Conditional Truth and False rows with live re-scoring
+- [x] Full edit history per row (original + every edit version) persisted to `row_edits` DB table
+- [x] Green highlight for rows corrected to Truth via editing; hover shows complete version history

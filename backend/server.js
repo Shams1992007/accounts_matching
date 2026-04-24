@@ -55,6 +55,16 @@ async function initDb() {
       UNIQUE (import_id, panel_key)
     );
 
+    CREATE TABLE IF NOT EXISTS row_edits (
+      id         SERIAL PRIMARY KEY,
+      import_id  INTEGER NOT NULL REFERENCES imports(id) ON DELETE CASCADE,
+      pair_id    TEXT NOT NULL,
+      versions   JSONB NOT NULL DEFAULT '[]',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (import_id, pair_id)
+    );
+
     CREATE TABLE IF NOT EXISTS formats (
       id         SERIAL PRIMARY KEY,
       key        TEXT UNIQUE NOT NULL,

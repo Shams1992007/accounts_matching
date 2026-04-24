@@ -45,6 +45,16 @@ CREATE TABLE IF NOT EXISTS formats (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS row_edits (
+  id         SERIAL PRIMARY KEY,
+  import_id  INTEGER NOT NULL REFERENCES imports(id) ON DELETE CASCADE,
+  pair_id    TEXT NOT NULL,
+  versions   JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (import_id, pair_id)
+);
+
 INSERT INTO formats (key, label, headers) VALUES
   ('QBO', 'QBO format', '["Transaction date","Name","Line description","Category","Account","Amount"]'),
   ('LGL', 'LGL format', '["Gift date","Name","Employer/Organization","Gift category","Payment Type","Amount"]')

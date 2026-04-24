@@ -137,6 +137,7 @@ export default function CompareFormattedData({
 
       {activeTab === "results" && (
         <CompareResultsTable
+          importId={importMeta?.importId}
           leftPanel={leftPanel}
           rightPanel={rightPanel}
           compareFields={compareFields}

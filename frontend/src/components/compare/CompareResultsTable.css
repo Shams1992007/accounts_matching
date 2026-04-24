@@ -2,6 +2,43 @@
   margin-top: 16px;
 }
 
+.compareFilterBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.compareFilterBtn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #4b5563;
+  background: #2a2a2a;
+  color: #d1d5db;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.compareFilterBtn:hover {
+  background: #374151;
+}
+
+.compareFilterBtn.active.filterType-all    { background: #374151; border-color: #9ca3af; color: #fff; }
+.compareFilterBtn.active.filterType-truth  { background: #14532d; border-color: #16a34a; color: #bbf7d0; }
+.compareFilterBtn.active.filterType-conditional { background: #1e1b70; border-color: #4f46e5; color: #c7d2fe; }
+.compareFilterBtn.active.filterType-false  { background: #7f1d1d; border-color: #dc2626; color: #fecaca; }
+
+.compareFilterCount {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
 .compareResultsInfo {
   margin-bottom: 10px;
   opacity: 0.8;
@@ -13,6 +50,11 @@
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #1a1a1a;
+  width: 100%;
+}
+
+.compareResultsTable {
+  min-width: 100%;
 }
 
 .compareResultsTable {
@@ -27,6 +69,13 @@
   white-space: nowrap;
   text-align: left;
   vertical-align: top;
+  min-width: 100px;
+}
+
+.compareResultsTable .compareSpacer,
+.compareResultsTable .editActionCell,
+.compareResultsTable .editActions {
+  min-width: unset;
 }
 
 .compareResultsTable thead th {
@@ -52,5 +101,92 @@
   color: #991b1b;
   font-weight: 700;
   text-align: center;
+}
+
+/* Edit button in action cell */
+.editActionCell {
+  white-space: nowrap;
+  padding: 4px 6px !important;
+}
+
+.editRowBtn {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid #4b5563;
+  background: #2a2a2a;
+  color: #d1d5db;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.editRowBtn:hover {
+  background: #374151;
+  border-color: #6b7280;
+}
+
+/* Editing row */
+.editingRow td {
+  background: #1e293b !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  vertical-align: middle;
+}
+
+.editCell {
+  padding: 4px !important;
+  min-width: 100px;
+}
+
+.editInput {
+  width: 100%;
+  min-width: 90px;
+  padding: 4px 6px;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  background: #111827;
+  color: #f9fafb;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Save / Cancel buttons */
+.editActions {
+  white-space: nowrap;
+  padding: 4px 6px !important;
+  vertical-align: middle;
+}
+
+.editSaveBtn,
+.editCancelBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.editSaveBtn {
+  background: #15803d;
+  border: 1px solid #16a34a;
+  color: #fff;
+}
+
+.editSaveBtn:hover {
+  background: #166534;
+}
+
+.editCancelBtn {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+}
+
+.editCancelBtn:hover {
+  background: #4b5563;
 }
 
