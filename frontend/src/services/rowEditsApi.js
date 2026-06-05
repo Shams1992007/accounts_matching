@@ -1,17 +1,15 @@
-const BASE = "http://localhost:5020/api/import";
+import { getJsonOrThrow } from "./importApi";
 
 export async function fetchRowEdits(importId) {
-  const res = await fetch(`${BASE}/${importId}/row-edits`);
-  if (!res.ok) throw new Error("Failed to fetch row edits");
-  return res.json(); // [{ pairId, versions }]
+  const res = await fetch(`/api/import/${importId}/row-edits`);
+  return getJsonOrThrow(res);
 }
 
 export async function saveRowEdit(importId, pairId, versions) {
-  const res = await fetch(`${BASE}/${importId}/row-edits/${encodeURIComponent(pairId)}`, {
+  const res = await fetch(`/api/import/${importId}/row-edits/${encodeURIComponent(pairId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ versions }),
   });
-  if (!res.ok) throw new Error("Failed to save row edit");
-  return res.json();
+  return getJsonOrThrow(res);
 }

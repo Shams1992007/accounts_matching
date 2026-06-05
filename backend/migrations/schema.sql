@@ -55,6 +55,17 @@ CREATE TABLE IF NOT EXISTS row_edits (
   UNIQUE (import_id, pair_id)
 );
 
+CREATE TABLE IF NOT EXISTS compare_configs (
+  id                  SERIAL PRIMARY KEY,
+  left_format_key     TEXT NOT NULL,
+  right_format_key    TEXT NOT NULL,
+  compare_fields      JSONB NOT NULL DEFAULT '[]',
+  minimum_match_count INTEGER NOT NULL DEFAULT 2,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (left_format_key, right_format_key)
+);
+
 INSERT INTO formats (key, label, headers) VALUES
   ('QBO', 'QBO format', '["Transaction date","Name","Line description","Category","Account","Amount"]'),
   ('LGL', 'LGL format', '["Gift date","Name","Employer/Organization","Gift category","Payment Type","Amount"]')

@@ -4,6 +4,8 @@ import cors from "cors";
 import { pool } from "./db.js";
 import importRoutes from "./importRoutes.js";
 import formatRoutes from "./routes/formatRoutes.js";
+import compareConfigRoutes from "./routes/compareConfigRoutes.js";
+import compareRoutes from "./routes/compareRoutes.js";
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.get("/api/ping", (req, res) => {
 
 app.use("/api/import", importRoutes);
 app.use("/api/formats", formatRoutes);
+app.use("/api/compare-configs", compareConfigRoutes);
+app.use("/api/imports", compareRoutes);
 
 async function initDb() {
   await pool.query(`
@@ -72,6 +76,17 @@ async function initDb() {
       headers    JSONB NOT NULL DEFAULT '[]',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS compare_configs (
+      id                  SERIAL PRIMARY KEY,
+      left_format_key     TEXT NOT NULL,
+      right_format_key    TEXT NOT NULL,
+      compare_fields      JSONB NOT NULL DEFAULT '[]',
+      minimum_match_count INTEGER NOT NULL DEFAULT 2,
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (left_format_key, right_format_key)
     );
 
     INSERT INTO formats (key, label, headers) VALUES

@@ -245,14 +245,25 @@ export function amountDifference(rowA, rowB, amountLeftField, amountRightField) 
   return (a - b).toFixed(2);
 }
 
+// The Required/Optional flag now controls *display* only — Required = column shown
+// in the Results table, Optional = column hidden. Pair eligibility no longer depends
+// on it; see MIN_MATCHES_FOR_PAIR below.
+export function isFieldRequired(field) {
+  return field?.required !== false;
+}
+
+// A pair is shown side-by-side in Results when at least this many compare fields
+// match. Ticks (Required/Optional) do NOT affect this gate.
+export const MIN_MATCHES_FOR_PAIR = 2;
+
 export function buildCompareRows({
   leftRows = [],
   rightRows = [],
   compareFields = [],
-  minimumMatchCount = 2,
 }) {
   const results = [];
   const usedRight = new Set();
+  const minMatches = Math.min(MIN_MATCHES_FOR_PAIR, compareFields.length);
 
   for (const leftRow of leftRows) {
     let bestIndex = -1;
@@ -263,6 +274,7 @@ export function buildCompareRows({
       if (usedRight.has(idx)) return;
 
       const { matches, detail } = scorePair(leftRow, rightRow, compareFields);
+      if (matches < minMatches) return;
 
       if (matches > bestScore) {
         bestScore = matches;
@@ -271,7 +283,7 @@ export function buildCompareRows({
       }
     });
 
-    if (bestIndex >= 0 && bestScore >= minimumMatchCount) {
+    if (bestIndex >= 0) {
       usedRight.add(bestIndex);
 
       results.push({
@@ -356,6 +368,7 @@ export function getDefaultCompareFields(leftHeaders = [], rightHeaders = []) {
       label: "Date",
       leftField: dateLeft,
       rightField: dateRight,
+      required: true,
     });
   }
 
@@ -367,6 +380,7 @@ export function getDefaultCompareFields(leftHeaders = [], rightHeaders = []) {
       label: "Name",
       leftField: nameLeft,
       rightField: nameRight,
+      required: true,
     });
   }
 
@@ -378,17 +392,23 @@ export function getDefaultCompareFields(leftHeaders = [], rightHeaders = []) {
       label: "Category",
       leftField: categoryLeft,
       rightField: categoryRight,
+      required: true,
     });
   }
 
-  const amountLeft = leftHeaders.find((h) => lower(h).includes("amount"));
-  const amountRight = rightHeaders.find((h) => lower(h).includes("amount"));
+  const isAmountHeader = (h) => {
+    const s = lower(h);
+    return s.includes("amount") || s.includes("balance");
+  };
+  const amountLeft = leftHeaders.find(isAmountHeader);
+  const amountRight = rightHeaders.find(isAmountHeader);
   if (amountLeft && amountRight) {
     fields.push({
       key: "amount",
       label: "Amount",
       leftField: amountLeft,
       rightField: amountRight,
+      required: true,
     });
   }
 

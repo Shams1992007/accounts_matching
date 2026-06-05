@@ -1,77 +1,127 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   amountDifference,
   compareBoolClass,
+  isFieldRequired,
   scorePair,
 } from "../../utils/compareUtils";
-import { fetchRowEdits, saveRowEdit } from "../../services/rowEditsApi";
+import { saveRowEdit } from "../../services/rowEditsApi";
 import "./CompareResultsTable.css";
 
-function getRowType(pair, compareFields, nameCompareField) {
-  const nameDetail = nameCompareField
-    ? pair?.matchDetail?.[nameCompareField.key]
-    : null;
+// Row color is judged on *visible* (Required) fields only — hidden Optional
+// fields are not part of what the user sees, so they don't influence the verdict.
+function getRowType(pair, visibleCompareFields, nameCompareField) {
+  const nameVisible = nameCompareField && visibleCompareFields.some((f) => f.key === nameCompareField.key);
+  const nameDetail = nameVisible ? pair?.matchDetail?.[nameCompareField.key] : null;
   const isEmployerFallback =
     nameDetail?.ok &&
     (nameDetail?.mode === "left_name_to_right_employer" ||
       nameDetail?.mode === "right_name_to_left_employer");
+  const allMatch = visibleCompareFields.every((f) => pair.matchDetail?.[f.key]?.ok);
+  if (!allMatch) return "false";
   if (isEmployerFallback) return "conditional";
-  const allMatch = compareFields.every((f) => pair.matchDetail?.[f.key]?.ok);
-  return allMatch ? "truth" : "false";
+  return "truth";
 }
 
-function buildHistoryTooltip(versions, compareFields) {
-  const typeLabel = { truth: "Truth ✓", conditional: "Conditional Truth", false: "False ✗" };
-  const lines = [`Full history (${versions.length} version${versions.length !== 1 ? "s" : ""}):`, ""];
+function getVersionDiffs(versions, idx) {
+  if (idx === 0) return { left: [], right: [] };
+  const prev = versions[idx - 1];
+  const curr = versions[idx];
+  const left = [];
+  const right = [];
+  for (const key of Object.keys(curr.leftRow || {})) {
+    if (key.startsWith("__")) continue;
+    const before = String(prev.leftRow?.[key] ?? "");
+    const after = String(curr.leftRow[key] ?? "");
+    if (before !== after) left.push({ key, before, after });
+  }
+  for (const key of Object.keys(curr.rightRow || {})) {
+    if (key.startsWith("__")) continue;
+    const before = String(prev.rightRow?.[key] ?? "");
+    const after = String(curr.rightRow[key] ?? "");
+    if (before !== after) right.push({ key, before, after });
+  }
+  return { left, right };
+}
 
-  versions.forEach((v, i) => {
-    const when =
-      i === 0
-        ? "Original"
-        : `${v.label}  —  ${new Date(v.timestamp).toLocaleString()}`;
-    lines.push(`${when}  [${typeLabel[v.type] || v.type}]`);
+const TYPE_LABEL = { truth: "Truth", conditional: "Conditional Truth", false: "False" };
+const TYPE_STYLE = {
+  truth:       { background: "#14532d", color: "#bbf7d0" },
+  conditional: { background: "#1e1b70", color: "#c7d2fe" },
+  false:       { background: "#7f1d1d", color: "#fecaca" },
+};
 
-    if (v.matchDetail) {
-      const fieldLine = compareFields
-        .map((f) => `${f.label}: ${v.matchDetail[f.key]?.ok ? "✓" : "✗"}`)
-        .join("   ");
-      lines.push(`  ${fieldLine}`);
-    }
+function HistoryModal({ versions, compareFields, onClose }) {
+  return (
+    <div className="historyModalOverlay" onClick={onClose}>
+      <div className="historyModalBox" onClick={(e) => e.stopPropagation()}>
+        <div className="historyModalHeader">
+          <span>Edit History — {versions.length} version{versions.length !== 1 ? "s" : ""}</span>
+          <button className="historyModalClose" onClick={onClose}>✕</button>
+        </div>
+        <div className="historyModalBody">
+          {versions.map((v, i) => {
+            const { left: leftDiffs, right: rightDiffs } = getVersionDiffs(versions, i);
+            const hasDiffs = leftDiffs.length > 0 || rightDiffs.length > 0;
+            const typeStyle = TYPE_STYLE[v.type] || {};
+            return (
+              <div key={i} className="historyVersion">
+                <div className="historyVersionHeader">
+                  <span className="historyVersionLabel">
+                    {i === 0 ? "Original" : v.label}
+                  </span>
+                  <span className="historyVersionType" style={typeStyle}>
+                    {TYPE_LABEL[v.type] || v.type}
+                  </span>
+                  {i > 0 && v.timestamp && (
+                    <span className="historyVersionTime">
+                      {new Date(v.timestamp).toLocaleString()}
+                    </span>
+                  )}
+                </div>
 
-    if (i > 0) {
-      const prev = versions[i - 1];
-      const leftChanges = [];
-      const rightChanges = [];
+                {v.matchDetail && (
+                  <div className="historyMatchFields">
+                    {compareFields.map((f) => {
+                      const ok = v.matchDetail[f.key]?.ok;
+                      return (
+                        <span key={f.key} className={ok ? "historyFieldTrue" : "historyFieldFalse"}>
+                          {f.label}: {ok ? "✓" : "✗"}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
 
-      for (const key of Object.keys(v.leftRow || {})) {
-        if (key.startsWith("__")) continue;
-        const before = String(prev.leftRow?.[key] ?? "");
-        const after = String(v.leftRow[key] ?? "");
-        if (before !== after)
-          leftChanges.push(`  ${key}: "${before}" → "${after}"`);
-      }
-      for (const key of Object.keys(v.rightRow || {})) {
-        if (key.startsWith("__")) continue;
-        const before = String(prev.rightRow?.[key] ?? "");
-        const after = String(v.rightRow[key] ?? "");
-        if (before !== after)
-          rightChanges.push(`  ${key}: "${before}" → "${after}"`);
-      }
-
-      if (leftChanges.length) {
-        lines.push("  [Left file changed]");
-        leftChanges.forEach((c) => lines.push(c));
-      }
-      if (rightChanges.length) {
-        lines.push("  [Right file changed]");
-        rightChanges.forEach((c) => lines.push(c));
-      }
-    }
-
-    lines.push("");
-  });
-
-  return lines.join("\n").trim();
+                {hasDiffs && (
+                  <div className="historyDiffs">
+                    {leftDiffs.map(({ key, before, after }) => (
+                      <div key={`l-${key}`} className="historyDiffRow">
+                        <span className="historyDiffSide">Left</span>
+                        <span className="historyDiffField">{key}</span>
+                        <span className="historyDiffBefore">"{before}"</span>
+                        <span className="historyDiffArrow">→</span>
+                        <span className="historyDiffAfter">"{after}"</span>
+                      </div>
+                    ))}
+                    {rightDiffs.map(({ key, before, after }) => (
+                      <div key={`r-${key}`} className="historyDiffRow">
+                        <span className="historyDiffSide">Right</span>
+                        <span className="historyDiffField">{key}</span>
+                        <span className="historyDiffBefore">"{before}"</span>
+                        <span className="historyDiffArrow">→</span>
+                        <span className="historyDiffAfter">"{after}"</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CompareResultsTable({
@@ -80,23 +130,20 @@ export default function CompareResultsTable({
   rightPanel,
   compareFields,
   matchedRows,
+  rowEdits,
+  setRowEdits,
+  rowFilter,
+  setRowFilter,
 }) {
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, text: "" });
-  const [rowFilter, setRowFilter] = useState("all");
   const [editingPairId, setEditingPairId] = useState(null);
   const [editDraft, setEditDraft] = useState({ left: {}, right: {} });
-  const [rowEdits, setRowEdits] = useState({});
+  const [historyModalVersions, setHistoryModalVersions] = useState(null);
 
-  useEffect(() => {
-    if (!importId) return;
-    fetchRowEdits(importId)
-      .then((rows) => {
-        const map = {};
-        for (const r of rows) map[r.pairId] = { versions: r.versions };
-        setRowEdits(map);
-      })
-      .catch(console.error);
-  }, [importId]);
+  const visibleCompareFields = useMemo(
+    () => compareFields.filter(isFieldRequired),
+    [compareFields]
+  );
 
   const amountCompareField = compareFields.find((f) =>
     f.label.toLowerCase().includes("amount")
@@ -134,14 +181,14 @@ export default function CompareResultsTable({
       matchDetail: detail,
       matchedCount: matches,
     };
-    const newType = getRowType(editedPair, compareFields, nameCompareField);
+    const newType = getRowType(editedPair, visibleCompareFields, nameCompareField);
 
     const prevEdits = rowEdits[originalPair.id];
     const originalVersion = prevEdits?.versions?.[0] || {
       leftRow: { ...originalPair.leftRow },
       rightRow: { ...originalPair.rightRow },
       matchDetail: originalPair.matchDetail,
-      type: getRowType(originalPair, compareFields, nameCompareField),
+      type: getRowType(originalPair, visibleCompareFields, nameCompareField),
       label: "Original",
       timestamp: Date.now(),
     };
@@ -199,16 +246,16 @@ export default function CompareResultsTable({
   const counts = useMemo(() => {
     const c = { truth: 0, conditional: 0, false: 0 };
     for (const pair of effectivePairs)
-      c[getRowType(pair, compareFields, nameCompareField)]++;
+      c[getRowType(pair, visibleCompareFields, nameCompareField)]++;
     return c;
-  }, [effectivePairs, compareFields, nameCompareField]);
+  }, [effectivePairs, visibleCompareFields, nameCompareField]);
 
   const visiblePairs = useMemo(() => {
     if (rowFilter === "all") return effectivePairs;
     return effectivePairs.filter(
-      (pair) => getRowType(pair, compareFields, nameCompareField) === rowFilter
+      (pair) => getRowType(pair, visibleCompareFields, nameCompareField) === rowFilter
     );
-  }, [effectivePairs, compareFields, nameCompareField, rowFilter]);
+  }, [effectivePairs, visibleCompareFields, nameCompareField, rowFilter]);
 
   const filterBtns = [
     { key: "all", label: "All", count: matchedRows.length },
@@ -243,7 +290,7 @@ export default function CompareResultsTable({
               <th className="compareSpacer" />
               <th colSpan={rightPanel.headers.length}>{rightPanel.title || "Right"}</th>
               <th className="compareSpacer" />
-              <th colSpan={compareFields.length + 1}>Do the records match?</th>
+              <th colSpan={visibleCompareFields.length + 1}>Do the records match?</th>
               <th />
             </tr>
             <tr>
@@ -251,7 +298,11 @@ export default function CompareResultsTable({
               <th className="compareSpacer" />
               {rightPanel.headers.map((h) => <th key={`rh-${h}`}>{h}</th>)}
               <th className="compareSpacer" />
-              {compareFields.map((f) => <th key={`cf-${f.key}`}>{f.label}</th>)}
+              {visibleCompareFields.map((f) => (
+                <th key={`cf-${f.key}`} title={`Comparison field: ${f.label}`}>
+                  {f.label}
+                </th>
+              ))}
               <th>Amount Diff</th>
               <th />
             </tr>
@@ -260,7 +311,7 @@ export default function CompareResultsTable({
           <tbody>
             {visiblePairs.map((pair) => {
               const originalPair = pair._originalPair || pair;
-              const rowType = getRowType(pair, compareFields, nameCompareField);
+              const rowType = getRowType(pair, visibleCompareFields, nameCompareField);
               const isEmployerFallback = rowType === "conditional";
               const edits = rowEdits[originalPair.id];
               const isEdited = (edits?.versions?.length || 0) > 1;
@@ -278,10 +329,10 @@ export default function CompareResultsTable({
                 ? `Name matched using Employer/Organization fallback. ${nameDetail?.reason || ""}`
                 : "";
 
-              const historyText = isEdited
-                ? buildHistoryTooltip(edits.versions, compareFields)
-                : "";
-              const dataCellTooltip = isEdited ? historyText : professionalReason;
+              const editCount = isEdited ? edits.versions.length - 1 : 0;
+              const dataCellTooltip = isEdited
+                ? `Edited ${editCount} time${editCount !== 1 ? "s" : ""}. Click the History button to view full edit history.`
+                : professionalReason;
 
               const infoCellStyle = wasEditedToTruth
                 ? { backgroundColor: "#14532d", color: "#bbf7d0", cursor: "help" }
@@ -324,7 +375,7 @@ export default function CompareResultsTable({
                       </td>
                     ))}
                     <td className="compareSpacer" />
-                    {compareFields.map((f) => {
+                    {visibleCompareFields.map((f) => {
                       const result = liveDetail[f.key];
                       return (
                         <td key={`em-${f.key}`} className={compareBoolClass(result)}>
@@ -387,7 +438,7 @@ export default function CompareResultsTable({
 
                   <td className="compareSpacer" />
 
-                  {compareFields.map((f) => {
+                  {visibleCompareFields.map((f) => {
                     const result = pair.matchDetail?.[f.key];
                     const isSpecialNameMatch =
                       f.key === nameCompareField?.key &&
@@ -433,6 +484,14 @@ export default function CompareResultsTable({
                         Edit
                       </button>
                     )}
+                    {isEdited && (
+                      <button
+                        className="historyRowBtn"
+                        onClick={() => setHistoryModalVersions(edits.versions)}
+                      >
+                        History
+                      </button>
+                    )}
                   </td>
                 </tr>
               );
@@ -440,6 +499,14 @@ export default function CompareResultsTable({
           </tbody>
         </table>
       </div>
+
+      {historyModalVersions && (
+        <HistoryModal
+          versions={historyModalVersions}
+          compareFields={visibleCompareFields}
+          onClose={() => setHistoryModalVersions(null)}
+        />
+      )}
 
       {tooltip.visible && (
         <div
@@ -478,7 +545,7 @@ export default function CompareResultsTable({
         {[
           { bg: "#0009b5", border: "#1d4ed8", label: "Blue — Name matched via Employer/Organization fallback." },
           { bg: "#7f1d1d", border: "#991b1b", label: "Red — One or more fields did not match." },
-          { bg: "#14532d", border: "#16a34a", label: "Green — Corrected to Truth via editing (hover for full history)." },
+          { bg: "#14532d", border: "#16a34a", label: "Green — Corrected to Truth via editing (click History to view)." },
         ].map(({ bg, border, label }) => (
           <span key={bg}>
             <span

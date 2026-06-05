@@ -138,20 +138,50 @@ export default function UserGuide() {
           The Compare page runs an auto-matching algorithm across both files and shows the results.
         </p>
 
-        <h3 className="ugSubTitle">3a — Configure matching fields</h3>
-        <ol className="ugList">
+        <h3 className="ugSubTitle">3a — Configure matching fields (Required vs Optional)</h3>
+        <p className="ugSectionDesc">
+          In the <em>Compare Setup</em> panel, each compared field (Date, Name, Category, Amount, etc.) has
+          a <strong style={{ color: "#1d4ed8" }}>Required</strong> / <strong style={{ color: "#6b7280" }}>Optional</strong> checkbox.
+        </p>
+        <ul className="ugList">
           <li>
-            In the <em>Compare Setup</em> panel, confirm the field pairs being compared: Date,
-            Name, Category, Amount.
+            <strong style={{ color: "#1d4ed8" }}>Required</strong> — the field <strong>MUST match</strong>.
+            If any required field fails, the pair is rejected and sent to <em>Unmatched Rows</em>.
           </li>
           <li>
-            Adjust the <strong>Minimum matching fields</strong> threshold if needed (default is 2 —
-            a row pair must match at least 2 fields to be considered a match).
+            <strong style={{ color: "#6b7280" }}>Optional</strong> — the field is still compared and shown
+            TRUE/FALSE in Results, but it <strong>does not affect pairing</strong>.
           </li>
           <li>
-            Click <strong>Run Comparison</strong>.
+            Pair matches <em>all required + all optional</em> → <strong>Truth</strong> (green/white row).
           </li>
-        </ol>
+          <li>
+            Pair matches <em>all required but fails an optional</em> → <strong>False</strong> (red row,
+            with the failing optional cell shown red).
+          </li>
+        </ul>
+        <div className="ugCallout ugCalloutInfo">
+          <strong>Tip:</strong> if a field uses different wording between the two files (e.g.{" "}
+          <em>Category</em> says "Birdies for Bel Inizio" on one side and "Golf Tournament Income"
+          on the other), mark it <strong style={{ color: "#6b7280" }}>Optional</strong>. The pair
+          will still match on the other fields, and the wording difference is highlighted in red in
+          the Results table for review.
+        </div>
+        <ul className="ugList">
+          <li>
+            You can also <strong>add</strong>, <strong>remove</strong>, or <strong>rename</strong>{" "}
+            fields. At least one field must remain Required (the last Required checkbox is locked).
+          </li>
+          <li>
+            Comparison reruns <strong>automatically</strong> whenever the field configuration
+            changes — there is no separate Run button.
+          </li>
+          <li>
+            Click <strong>💾 Save as default for this format pair</strong> to remember this setup
+            (including which fields are Required vs Optional) for future imports that use the same
+            two formats.
+          </li>
+        </ul>
 
         <h3 className="ugSubTitle">3b — Review matched rows</h3>
         <ol className="ugList">
@@ -159,13 +189,19 @@ export default function UserGuide() {
             The <strong>Matched Rows</strong> tab shows every auto-matched pair side by side.
           </li>
           <li>
-            Each row shows <strong>Date Match</strong>, <strong>Name Match</strong>,{" "}
-            <strong>Category Match</strong>, <strong>Amount Match</strong>, and{" "}
-            <strong>Amount Difference</strong> columns — green means matched, red means mismatch.
+            Each row shows the comparison columns (e.g. <strong>Date</strong>, <strong>Name</strong>,
+            <strong>Category</strong>, <strong>Amount</strong>) plus <strong>Amount Diff</strong> —
+            green TRUE means matched, red FALSE means mismatch.
           </li>
           <li>
-            A mismatch on a single field does not mean the pair is wrong — two other fields may
-            have matched to justify the pairing.
+            Each compare column header is marked <strong style={{ color: "#1d4ed8" }}>(req)</strong>{" "}
+            or <strong style={{ color: "#9ca3af" }}>(opt)</strong> so you can see at a glance which
+            fields are required and which are optional.
+          </li>
+          <li>
+            A red FALSE on an <strong>optional</strong> field is expected — the pair was still
+            accepted because all required fields matched. A red FALSE on a <strong>required</strong>{" "}
+            field cannot happen in Results (it would have been sent to Unmatched).
           </li>
         </ol>
 
@@ -344,9 +380,12 @@ export default function UserGuide() {
           <div className="ugTip">
             <div className="ugTipTitle">Too many or too few auto-matches</div>
             <div className="ugTipBody">
-              Adjust the <em>Minimum matching fields</em> threshold in Compare Setup. Raise it to 3
-              or 4 for stricter matching (fewer false positives), lower it to 1 for looser matching
-              (catches more pairs).
+              Only fields marked <strong style={{ color: "#1d4ed8" }}>Required</strong> in Compare
+              Setup must match for a pair to be accepted. <strong>Too few matches?</strong> Mark a
+              field as <strong style={{ color: "#6b7280" }}>Optional</strong> (e.g. Category, when
+              the two systems use different category wording). <strong>Too many loose matches?</strong>{" "}
+              Mark more fields as <strong style={{ color: "#1d4ed8" }}>Required</strong> so the bar
+              is higher.
             </div>
           </div>
           <div className="ugTip">

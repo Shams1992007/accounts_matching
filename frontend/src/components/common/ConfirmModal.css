@@ -9,12 +9,12 @@ z-index: 999;
 }
 
 .confirmBox{
-background: #1a1a1a;
+background: #ffffff;
 border-radius: 14px;
 padding: 26px;
 width: 420px;
 max-width: 92%;
-box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 animation: confirmPop .18s ease;
 }
 
@@ -48,7 +48,7 @@ gap: 10px;
 padding: 8px 14px;
 border-radius: 8px;
 border: 1px solid #d1d5db;
-background: #1a1a1a;
+background: #f9fafb;
 cursor: pointer;
 }
 

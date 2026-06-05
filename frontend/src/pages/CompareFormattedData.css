@@ -18,6 +18,26 @@
   margin: 12px 0;
 }
 
+.compareStatusBar {
+  margin: 8px 0 16px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid;
+}
+
+.compareStatusLoading {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.compareStatusError {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 /* Export Bar Styles */
 .compareExportBar {
   display: flex;

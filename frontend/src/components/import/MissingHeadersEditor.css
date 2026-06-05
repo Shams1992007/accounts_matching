@@ -1,6 +1,6 @@
 .missingHeadersBox {
   border: 1px solid #f59e0b;
-  background: #1a1a1a;
+  background: #fffbeb;
   padding: 12px;
   border-radius: 10px;
   margin-top: 12px;
@@ -61,17 +61,17 @@
 .previewBtn {
   padding: 3px 10px;
   font-size: 12px;
-  background: #2a2a2a;
-  border: 1px solid #555;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
   border-radius: 5px;
-  color: #ccc;
+  color: #374151;
   cursor: pointer;
 }
 
 .previewBtn:hover:not(:disabled) {
-  background: #3a3a3a;
-  border-color: #888;
-  color: #fff;
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #111827;
 }
 
 .previewBtn:disabled {
@@ -83,10 +83,10 @@
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.8;
-  background: #111;
+  background: #f8fafc;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid #e2e8f0;
 }
 
 .skipRowsPreviewLabel {

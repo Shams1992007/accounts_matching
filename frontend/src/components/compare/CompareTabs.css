@@ -18,13 +18,25 @@
 .compareTabs button {
   padding: 10px 14px;
   border: 1px solid #d1d5db;
-  background: #1a1a1a;
+  background: #f9fafb;
   border-radius: 10px;
   cursor: pointer;
 }
 
 .compareTabs .compareTabActive {
-  background: #111827;
+  background: #1d4ed8;
   color: #fff;
-  border-color: #111827;
+  border-color: #1d4ed8;
+}
+
+.compareTabCount {
+  margin-left: 6px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.compareTabCountBreakdown {
+  font-weight: 400;
+  font-size: 0.9em;
+  opacity: 0.85;
 }

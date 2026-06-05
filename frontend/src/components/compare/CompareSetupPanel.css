@@ -2,7 +2,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 16px;
-  background: #1a1a1a;
+  background: #ffffff;
 }
 
 .compareSetupTop {
@@ -23,27 +23,226 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.compareSetupMinimumLabel {
+  white-space: nowrap;
+}
+
+.compareSetupMinimumSelect {
+  font-weight: 600;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  min-width: 56px;
+}
+
+.compareSetupHint {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-left: 3px solid #1d4ed8;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #374151;
+}
+
+.compareSetupHint .hintRequired {
+  color: #1d4ed8;
+}
+
+.compareSetupHint .hintOptional {
+  color: #6b7280;
+}
+
+.compareSetupHint .hintTip {
+  display: block;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #e5e7eb;
+  color: #4b5563;
+}
+
+.compareSetupFieldsHeader {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.compareSetupFieldsSub {
+  margin-left: 6px;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+.compareSetupColHeader {
+  display: grid;
+  grid-template-columns: 36px 110px 1fr 1fr 20px 1fr auto;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .compareSetupList {
-  margin-top: 14px;
+  margin-top: 6px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.compareSetupEmpty {
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
 }
 
 .compareSetupRow {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 36px 110px 1fr 1fr 20px 1fr auto;
   gap: 10px;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+}
+
+.compareSetupRowRequired {
+  border-left: 3px solid #1d4ed8;
+  background: #f5f7ff;
+}
+
+.compareSetupRowOptional {
+  border-left: 3px solid #9ca3af;
+  background: #fafafa;
+  opacity: 0.92;
+}
+
+.compareSetupRequiredToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.compareSetupRequiredToggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.compareSetupRequiredToggle.isRequired .compareSetupRequiredText {
+  color: #1d4ed8;
+}
+
+.compareSetupRequiredToggle.isOptional .compareSetupRequiredText {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.compareSetupRequiredCount {
+  color: #1d4ed8;
+}
+
+.compareSetupOptionalNote {
+  font-weight: 400;
+  font-size: 0.92em;
+  opacity: 0.85;
+}
+
+.compareSetupRow:hover {
+  background: #f9fafb;
+}
+
+.compareSetupRowNum {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+}
+
+.compareSetupArrow {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 16px;
 }
 
 .compareSetupRow input,
 .compareSetupRow select {
   min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.compareSetupActions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.compareSetupSaveBtn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.compareSetupSaveBtn:hover:not(:disabled) {
+  background: #374151;
+  border-color: #374151;
+}
+
+.compareSetupSaveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.compareSetupSaveBtnOk {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.compareSetupSaveBtnErr {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
 }
 
 @media (max-width: 900px) {
+  .compareSetupColHeader {
+    display: none;
+  }
   .compareSetupRow {
     grid-template-columns: 1fr;
+  }
+  .compareSetupArrow {
+    display: none;
   }
 }

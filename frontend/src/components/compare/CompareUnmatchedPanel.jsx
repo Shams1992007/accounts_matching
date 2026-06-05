@@ -55,20 +55,36 @@ export default function CompareUnmatchedPanel({
         <div className="compareManualPairRow">
           <select value={selectedLeft} onChange={(e) => setSelectedLeft(e.target.value)}>
             <option value="">-- Select unmatched row from {leftPanel.title} --</option>
-            {unmatchedLeft.map((row) => (
-              <option key={row.__rowKey} value={row.__rowKey}>
-                #{row.__rowKey} — {row.Name || row["Name"] || "(no name)"}
-              </option>
-            ))}
+            {unmatchedLeft.map((row) => {
+              const label = leftPanel.headers
+                .filter((h) => !h.startsWith("__"))
+                .map((h) => String(row[h] ?? ""))
+                .filter(Boolean)
+                .slice(0, 3)
+                .join(" — ");
+              return (
+                <option key={row.__rowKey} value={row.__rowKey}>
+                  #{row.__rowKey} — {label || "(empty row)"}
+                </option>
+              );
+            })}
           </select>
 
           <select value={selectedRight} onChange={(e) => setSelectedRight(e.target.value)}>
             <option value="">-- Select unmatched row from {rightPanel.title} --</option>
-            {unmatchedRight.map((row) => (
-              <option key={row.__rowKey} value={row.__rowKey}>
-                #{row.__rowKey} — {row.Name || row["Name"] || "(no name)"}
-              </option>
-            ))}
+            {unmatchedRight.map((row) => {
+              const label = rightPanel.headers
+                .filter((h) => !h.startsWith("__"))
+                .map((h) => String(row[h] ?? ""))
+                .filter(Boolean)
+                .slice(0, 3)
+                .join(" — ");
+              return (
+                <option key={row.__rowKey} value={row.__rowKey}>
+                  #{row.__rowKey} — {label || "(empty row)"}
+                </option>
+              );
+            })}
           </select>
 
           <button onClick={addManualPair}>Add Pair</button>
