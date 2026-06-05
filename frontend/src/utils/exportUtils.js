@@ -47,7 +47,30 @@ function isSummaryRow(rowObj, headers) {
   return hasAmountData && !hasNonAmountData;
 }
 
-export function buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits = {}, activeTab = "results", rowFilter = "all") {
+// Case-insensitive substring match against the left + right cell values that
+// would render in the table. Mirrors rowMatchesSearch in CompareResultsTable.
+function rowMatchesSearch(pair, leftHeaders, rightHeaders, q) {
+  if (!q) return true;
+  for (const h of leftHeaders) {
+    if (String(getFieldValue(pair.leftRow, h)).toLowerCase().includes(q)) return true;
+  }
+  for (const h of rightHeaders) {
+    if (String(getFieldValue(pair.rightRow, h)).toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+
+function unmatchedRowMatchesSearch(rowObj, headers, q) {
+  if (!q) return true;
+  for (const h of headers) {
+    if (String(getFieldValue(rowObj, h)).toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+
+export function buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits = {}, activeTab = "results", rowFilter = "all", opts = {}) {
+  const { searchQuery = "", hideStandalone = false } = opts;
+  const q = (searchQuery || "").trim().toLowerCase();
   const rows = [];
   const visibleCompareFields = compareFields.filter(isFieldRequired);
   const amountField = compareFields.find(f => f.key === "amount");
@@ -55,6 +78,7 @@ export function buildExportData(finalResult, compareFields, leftHeaders, rightHe
   if (activeTab === "unmatched") {
     finalResult.unmatchedLeft?.forEach(rowObj => {
       if (isSummaryRow(rowObj, leftHeaders)) return;
+      if (!unmatchedRowMatchesSearch(rowObj, leftHeaders, q)) return;
       const row = { __rowType: "unmatched", __isEdited: false };
       leftHeaders.forEach(h => { row[`__A_${h}`] = getFieldValue(rowObj, h); });
       rightHeaders.forEach(h => { row[`__B_${h}`] = ""; });
@@ -65,6 +89,7 @@ export function buildExportData(finalResult, compareFields, leftHeaders, rightHe
 
     finalResult.unmatchedRight?.forEach(rowObj => {
       if (isSummaryRow(rowObj, rightHeaders)) return;
+      if (!unmatchedRowMatchesSearch(rowObj, rightHeaders, q)) return;
       const row = { __rowType: "unmatched", __isEdited: false };
       leftHeaders.forEach(h => { row[`__A_${h}`] = ""; });
       rightHeaders.forEach(h => { row[`__B_${h}`] = getFieldValue(rowObj, h); });
@@ -76,12 +101,14 @@ export function buildExportData(finalResult, compareFields, leftHeaders, rightHe
     return rows;
   }
 
-  // Results tab — respect active row filter
+  // Results tab — respect active row filter, hide-standalone toggle, and search
   finalResult.matchedRows?.forEach((pair) => {
     if (isSummaryRow(pair.leftRow, leftHeaders) || isSummaryRow(pair.rightRow, rightHeaders)) return;
+    if (hideStandalone && pair.isStandalone) return;
 
     const rowType = getRowType(pair, visibleCompareFields);
     if (rowFilter !== "all" && rowType !== rowFilter) return;
+    if (!rowMatchesSearch(pair, leftHeaders, rightHeaders, q)) return;
 
     const isEdited = (rowEdits[pair.id]?.versions?.length || 0) > 1;
     const row = { __rowType: rowType, __isEdited: isEdited };
@@ -114,14 +141,14 @@ export function getColumnDefs(leftHeaders, rightHeaders, compareFields) {
   ];
 }
 
-export function exportCSV(finalResult, compareFields, leftPanel, rightPanel, rowEdits = {}, activeTab = "results", rowFilter = "all", filename = null) {
+export function exportCSV(finalResult, compareFields, leftPanel, rightPanel, rowEdits = {}, activeTab = "results", rowFilter = "all", filename = null, opts = {}) {
   try {
     const leftHeaders = leftPanel?.headers || [];
     const rightHeaders = rightPanel?.headers || [];
     const leftTitle = leftPanel?.title || "File A";
     const rightTitle = rightPanel?.title || "File B";
 
-    const rows = buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits, activeTab, rowFilter);
+    const rows = buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits, activeTab, rowFilter, opts);
     if (!rows?.length) { alert("No data to export"); return; }
 
     const visibleCompareFields = compareFields.filter(isFieldRequired);
@@ -179,14 +206,14 @@ const ROW_FILLS = {
   unmatched:   { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF2CC" } },
 };
 
-export async function exportExcel(finalResult, compareFields, leftPanel, rightPanel, rowEdits = {}, activeTab = "results", rowFilter = "all", filename = null) {
+export async function exportExcel(finalResult, compareFields, leftPanel, rightPanel, rowEdits = {}, activeTab = "results", rowFilter = "all", filename = null, opts = {}) {
   try {
     const leftHeaders = leftPanel?.headers || [];
     const rightHeaders = rightPanel?.headers || [];
     const leftTitle = leftPanel?.title || "File A";
     const rightTitle = rightPanel?.title || "File B";
 
-    const rows = buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits, activeTab, rowFilter);
+    const rows = buildExportData(finalResult, compareFields, leftHeaders, rightHeaders, rowEdits, activeTab, rowFilter, opts);
     if (!rows?.length) { alert("No data to export"); return; }
 
     const visibleCompareFields = compareFields.filter(isFieldRequired);

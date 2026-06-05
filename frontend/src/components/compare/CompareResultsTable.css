@@ -2,6 +2,81 @@
   margin-top: 16px;
 }
 
+.compareSearchBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.compareSearchInputWrap {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+.compareSearchInput {
+  width: 100%;
+  padding: 7px 30px 7px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.compareSearchInput:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.15);
+}
+
+.compareSearchClear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.compareSearchClear:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.compareStandaloneToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.compareStandaloneToggle input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.compareStandaloneCount {
+  display: inline-block;
+  background: #e5e7eb;
+  color: #374151;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 12px;
+  margin-left: 2px;
+}
+
 .compareFilterBar {
   display: flex;
   gap: 8px;

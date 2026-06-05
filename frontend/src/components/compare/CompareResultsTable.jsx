@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   amountDifference,
   compareBoolClass,
@@ -134,6 +134,10 @@ export default function CompareResultsTable({
   setRowEdits,
   rowFilter,
   setRowFilter,
+  searchQuery,
+  setSearchQuery,
+  hideStandalone,
+  setHideStandalone,
 }) {
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, text: "" });
   const [editingPairId, setEditingPairId] = useState(null);
@@ -243,22 +247,51 @@ export default function CompareResultsTable({
     });
   }, [matchedRows, rowEdits, compareFields]);
 
+  // Counts reflect the hideStandalone toggle so the chip numbers match the
+  // table, but they ignore the search query — search narrows what you see
+  // within a type, not the type populations themselves.
+  const countablePairs = useMemo(
+    () => (hideStandalone ? effectivePairs.filter((p) => !p.isStandalone) : effectivePairs),
+    [effectivePairs, hideStandalone]
+  );
+
+  const standaloneCount = useMemo(
+    () => effectivePairs.filter((p) => p.isStandalone).length,
+    [effectivePairs]
+  );
+
   const counts = useMemo(() => {
     const c = { truth: 0, conditional: 0, false: 0 };
-    for (const pair of effectivePairs)
+    for (const pair of countablePairs)
       c[getRowType(pair, visibleCompareFields, nameCompareField)]++;
     return c;
-  }, [effectivePairs, visibleCompareFields, nameCompareField]);
+  }, [countablePairs, visibleCompareFields, nameCompareField]);
+
+  const rowMatchesSearch = useCallback(
+    (pair, q) => {
+      if (!q) return true;
+      for (const h of leftPanel.headers) {
+        if (String(pair.leftRow?.[h] ?? "").toLowerCase().includes(q)) return true;
+      }
+      for (const h of rightPanel.headers) {
+        if (String(pair.rightRow?.[h] ?? "").toLowerCase().includes(q)) return true;
+      }
+      return false;
+    },
+    [leftPanel.headers, rightPanel.headers]
+  );
 
   const visiblePairs = useMemo(() => {
-    if (rowFilter === "all") return effectivePairs;
-    return effectivePairs.filter(
-      (pair) => getRowType(pair, visibleCompareFields, nameCompareField) === rowFilter
-    );
-  }, [effectivePairs, visibleCompareFields, nameCompareField, rowFilter]);
+    const q = (searchQuery || "").trim().toLowerCase();
+    return countablePairs.filter((pair) => {
+      if (rowFilter !== "all" && getRowType(pair, visibleCompareFields, nameCompareField) !== rowFilter) return false;
+      if (!rowMatchesSearch(pair, q)) return false;
+      return true;
+    });
+  }, [countablePairs, visibleCompareFields, nameCompareField, rowFilter, searchQuery, rowMatchesSearch]);
 
   const filterBtns = [
-    { key: "all", label: "All", count: matchedRows.length },
+    { key: "all", label: "All", count: countablePairs.length },
     { key: "truth", label: "Truth", count: counts.truth },
     { key: "conditional", label: "Conditional Truth", count: counts.conditional },
     { key: "false", label: "False", count: counts.false },
@@ -266,6 +299,39 @@ export default function CompareResultsTable({
 
   return (
     <div className="compareResultsWrap" style={{ position: "relative" }}>
+      <div className="compareSearchBar">
+        <div className="compareSearchInputWrap">
+          <input
+            type="search"
+            className="compareSearchInput"
+            placeholder="Search any field…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="compareSearchClear"
+              onClick={() => setSearchQuery("")}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <label className="compareStandaloneToggle">
+          <input
+            type="checkbox"
+            checked={hideStandalone}
+            onChange={(e) => setHideStandalone(e.target.checked)}
+          />
+          Hide one-sided rows
+          {standaloneCount > 0 && (
+            <span className="compareStandaloneCount">{standaloneCount}</span>
+          )}
+        </label>
+      </div>
+
       <div className="compareFilterBar">
         {filterBtns.map((btn) => (
           <button
@@ -279,7 +345,12 @@ export default function CompareResultsTable({
       </div>
 
       <div className="compareResultsInfo">
-        Showing {visiblePairs.length} of {matchedRows.length} paired rows.
+        Showing {visiblePairs.length} of {countablePairs.length} paired rows
+        {searchQuery ? ` matching “${searchQuery}”` : ""}
+        {hideStandalone && standaloneCount > 0
+          ? ` · ${standaloneCount} one-sided hidden`
+          : ""}
+        .
       </div>
 
       <div className="compareResultsTableWrap">

@@ -312,6 +312,79 @@ export function buildCompareRows({
   };
 }
 
+// A row is "fully filled" when every compare field on its side has a non-empty
+// value. Used to decide whether an unmatched row deserves a standalone slot in
+// the Results table.
+export function isFullyFilled(row, compareFields, side) {
+  if (!row || !compareFields?.length) return false;
+  const key = side === "left" ? "leftField" : "rightField";
+  return compareFields.every((f) => {
+    const val = row[f[key]];
+    return val !== undefined && val !== null && String(val).trim() !== "";
+  });
+}
+
+// Fully-filled rows (every compare field non-empty on that side) that didn't
+// auto-match or get manually paired appear in Results as standalone "False"
+// rows — one side filled, the other side blank. They stay in the Unmatched
+// list too, so they can still be manually paired; pairing one drops it from
+// `unmatchedLeft`/`unmatchedRight`, which removes its standalone entry on the
+// next render.
+export function addStandalonePairs({
+  matchedRows = [],
+  unmatchedLeft = [],
+  unmatchedRight = [],
+  compareFields = [],
+}) {
+  if (!compareFields.length) {
+    return { matchedRows, unmatchedLeft, unmatchedRight };
+  }
+
+  const standaloneLeft = unmatchedLeft.filter((r) => isFullyFilled(r, compareFields, "left"));
+  const standaloneRight = unmatchedRight.filter((r) => isFullyFilled(r, compareFields, "right"));
+
+  if (!standaloneLeft.length && !standaloneRight.length) {
+    return { matchedRows, unmatchedLeft, unmatchedRight };
+  }
+
+  const emptyDetail = (reason) => {
+    const detail = {};
+    for (const f of compareFields) {
+      detail[f.key] = { ok: false, mode: "standalone", reason };
+    }
+    return detail;
+  };
+
+  const newPairs = [
+    ...standaloneLeft.map((leftRow) => ({
+      id: `standalone-L-${leftRow.__rowKey}`,
+      leftRow,
+      rightRow: {},
+      matchDetail: emptyDetail("Row has no counterpart on the right side"),
+      matchedCount: 0,
+      manualPair: false,
+      isStandalone: true,
+      standaloneSide: "left",
+    })),
+    ...standaloneRight.map((rightRow) => ({
+      id: `standalone-R-${rightRow.__rowKey}`,
+      leftRow: {},
+      rightRow,
+      matchDetail: emptyDetail("Row has no counterpart on the left side"),
+      matchedCount: 0,
+      manualPair: false,
+      isStandalone: true,
+      standaloneSide: "right",
+    })),
+  ];
+
+  return {
+    matchedRows: [...matchedRows, ...newPairs],
+    unmatchedLeft,
+    unmatchedRight,
+  };
+}
+
 export function applyManualPairs({
   baseMatchedRows = [],
   unmatchedLeft = [],

@@ -5,6 +5,7 @@ import CompareSetupPanel from "../components/compare/CompareSetupPanel";
 import CompareResultsTable from "../components/compare/CompareResultsTable";
 import CompareUnmatchedPanel from "../components/compare/CompareUnmatchedPanel";
 import {
+  addStandalonePairs,
   applyManualPairs,
   getDefaultCompareFields,
   scorePair,
@@ -25,6 +26,8 @@ export default function CompareFormattedData({
 
   const [activeTab, setActiveTab] = useState("results");
   const [rowFilter, setRowFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hideStandalone, setHideStandalone] = useState(false);
   const [compareFields, setCompareFields] = useState([]);
   const [manualPairs, setManualPairs] = useState([]);
   const [rowEdits, setRowEdits] = useState({});
@@ -175,11 +178,17 @@ export default function CompareFormattedData({
   ]);
 
   const finalResult = useMemo(() => {
-    return applyManualPairs({
+    const afterManual = applyManualPairs({
       baseMatchedRows: baseResult.matchedRows,
       unmatchedLeft: baseResult.unmatchedLeft,
       unmatchedRight: baseResult.unmatchedRight,
       manualPairs,
+      compareFields,
+    });
+    return addStandalonePairs({
+      matchedRows: afterManual.matchedRows,
+      unmatchedLeft: afterManual.unmatchedLeft,
+      unmatchedRight: afterManual.unmatchedRight,
       compareFields,
     });
   }, [baseResult, manualPairs, compareFields]);
@@ -197,7 +206,7 @@ export default function CompareFormattedData({
 
   const handleExportCSV = () => {
     try {
-      exportCSV(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter);
+      exportCSV(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
     } catch (err) {
       console.error("CSV Export Error:", err);
       alert("Failed to export CSV: " + err.message);
@@ -206,7 +215,7 @@ export default function CompareFormattedData({
 
   const handleExportExcel = async () => {
     try {
-      await exportExcel(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter);
+      await exportExcel(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
     } catch (err) {
       console.error("Excel Export Error:", err);
       alert("Failed to export Excel: " + err.message);
@@ -297,6 +306,10 @@ export default function CompareFormattedData({
           setRowEdits={setRowEdits}
           rowFilter={rowFilter}
           setRowFilter={setRowFilter}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          hideStandalone={hideStandalone}
+          setHideStandalone={setHideStandalone}
         />
       )}
 

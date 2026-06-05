@@ -9,7 +9,8 @@ Typical use: matching a bank export (QBO) against a donations ledger (LGL).
 | | |
 |---|---|
 | Frontend | http://15.235.216.232:3001 (nginx → `frontend/dist/`) |
-| Backend  | :5020, PM2 name `accounts-backend`, nginx `/etc/nginx/sites-enabled/accounts-matching` |
+| Backend  | :5020, PM2 name `accounts-backend` |
+| Nginx    | `/etc/nginx/sites-enabled/accounts-matching` — proxies `/api/` and `/health` to `127.0.0.1:5020`, serves `frontend/dist/` for everything else (SPA fallback to `index.html`) |
 
 ```bash
 cd frontend && npm run build               # nginx serves dist/ immediately
@@ -18,8 +19,58 @@ pm2 restart accounts-backend               # after backend change
 
 ## Stack
 
-Node 20 (ESM) + Express, Postgres 16, papaparse + xlsx, ExcelJS.
+Node 20 (ESM) + Express, **Postgres 14** (shared cluster — see project-hub CLAUDE.md), papaparse + xlsx + multer, ExcelJS (frontend only — exports built client-side).
 React 19 + Vite.
+
+## Repo layout
+
+```
+backend/
+  server.js              # app entry, mounts routes, runs initDb() + seeds QBO/LGL
+  db.js                  # pg Pool (uses DATABASE_URL or DB_* vars)
+  importRoutes.js        # legacy aggregate — mounts importCrud/file/mapping/rowEdit
+  routes/
+    formatRoutes.js          # /api/formats CRUD
+    compareConfigRoutes.js   # /api/compare-configs GET/PUT (per format pair)
+    compareRoutes.js         # POST /api/imports/:id/compare (runs matcher)
+    (importCrud/File/Mapping/rowEdit routes under routes/import/*)
+  services/              # importMetaService etc. — header derivation, row helpers
+  migrations/schema.sql  # idempotent mirror of initDb()
+
+frontend/src/
+  pages/
+    ImportTwoFiles.jsx        # Step 1 — upload, parse, header editor, skip-rows
+    FormatTwoFiles.jsx        # Step 2 — side-by-side mapping
+    CompareFormattedData.jsx  # Step 3 — matcher, tabs, filter, export
+    ManageFormats.jsx         # CRUD for formats table
+    UserGuide.jsx
+  components/
+    common/   DataTable · ConfirmModal · Pager
+    import/   FileUploadCard · ImportHeader · ImportLoadBar · MissingHeadersEditor · LoadedImportActions · ImportViewerToolbar
+    format/   FormatPanel · FormattedTable · MappingRow
+    compare/  CompareHeader · CompareTabs · CompareSetupPanel · CompareResultsTable · CompareUnmatchedPanel
+  services/   importApi · formatsApi · compareApi · compareConfigApi · rowEditsApi
+  utils/      compareUtils (matcher) · exportUtils (CSV/Excel)
+```
+
+## API endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET    | `/health`, `/api/ping` | Health |
+| GET    | `/api/import/list` | List imports (max 100) |
+| POST   | `/api/import/create` | Upload fileA + fileB, parse, batch-insert |
+| GET    | `/api/import/:importId` | Import metadata |
+| PUT    | `/api/import/:importId/replace` | Replace both files |
+| DELETE | `/api/import/:importId` | Delete (cascades) |
+| PATCH  | `/api/import/file/:fileId/headers` | Rename blank `__EMPTY_N` headers |
+| POST   | `/api/import/file/:fileId/apply-skip-rows` | Skip N leading rows, promote row N as headers |
+| GET    | `/api/import/file/:fileId/rows` | Paginated preview (with derived fields) |
+| GET/PUT| `/api/import/:importId/mappings[/:panelKey]` | Per-panel mapping persistence |
+| GET/PUT| `/api/import/:importId/row-edits[/:pairId]` | Row-edit version history |
+| GET/POST/PUT/DELETE | `/api/formats[/:id]` | Format CRUD (DELETE blocked if referenced by a mapping) |
+| GET/PUT| `/api/compare-configs?leftFormat=X&rightFormat=Y` | Per format-pair compare config |
+| POST   | `/api/imports/:id/compare` | Run matcher, return pairs + unmatched |
 
 ## End-to-end flow
 
@@ -27,14 +78,21 @@ React 19 + Vite.
 DB-driven (`formats` table) — formats are not hardcoded. Each format = `{key, label, headers[]}`. QBO and LGL are seeded once on first startup. Delete is blocked if any saved mapping references the format.
 
 ### Step 1 — Import
-Upload two files → backend parses, batch-inserts (500 rows/batch) into Postgres. If headers are missing (blank `__EMPTY_N`), the "Missing headers editor" lets the user name them in-place. **`Real headers are in row #` input is empty by default and triggers Preview via debounce (500ms) / Enter / blur / explicit Preview button.** Previous import sessions are listed with replace/delete.
+Upload two files → backend parses (papaparse for CSV, xlsx for XLSX), batch-inserts (500 rows/batch) into Postgres. Three header-fix tools live on the same page:
+- **Missing headers editor** — names blank `__EMPTY_N` columns in-place.
+- **`Real headers are in row #`** — empty by default; debounce 500ms / Enter / blur / explicit Preview triggers preview. Apply calls `apply-skip-rows`, which discards rows above N and promotes that row to headers.
+- **Derived `Name` column** — preview fills `Name` from `First Name` + `Last Name` when the source has those but no `Name`.
+
+Previous import sessions are listed with replace/delete.
 
 ### Step 2 — Format
 Two side-by-side panels. User picks a target format from the DB-driven list and maps source columns to format headers. Mappings persist per import.
 
 ### Step 3 — Compare
 
-Auto-matching scores every left-row against every right-row across **all** configured compare fields. A pair is kept (Results) when at least **`MIN_MATCHES_FOR_PAIR` = 2** fields match; the best-scoring still-available right-row wins for each left-row (greedy). Anything below the threshold falls to **Unmatched Rows**.
+Auto-matching scores every left-row against every right-row across **all** configured compare fields. A pair is kept (Results) when at least **`MIN_MATCHES_FOR_PAIR` = 2** fields match (`compareUtils.js`); the best-scoring still-available right-row wins for each left-row (greedy). Anything below the threshold falls to **Unmatched Rows**.
+
+**Standalone fully-filled rows (`addStandalonePairs`)** — after auto-match + manual pairing, any leftover row whose every compare field is non-empty (on its side) is also surfaced in Results as a False pair with the other side blank. The row stays in the Unmatched list so it can still be manually paired; once paired it leaves `unmatchedLeft`/`unmatchedRight` and the standalone entry disappears on the next render. Standalones are editable like any other False row, so the empty side can be filled in via inline edit and rescored. This runs purely on the frontend in `CompareFormattedData.jsx` — the backend `buildCompareRows` is unchanged.
 
 **Per-field Required/Optional flag — display only:**
 - `required: true` → that comparison column is **shown** in the Results table.
@@ -43,9 +101,14 @@ Auto-matching scores every left-row against every right-row across **all** confi
 
 Fields compared (configurable in Compare Setup, default `Date·Name·Category·Amount`).
 
-Normalization: amounts strip `$,`, dates parse `m/d/yy(yy)`, category strips codes/prefixes & extracts tail from colon chains, name falls back to Employer/Organization (case-insensitive).
+Normalization (`compareUtils.js`):
+- **Amounts** — strip `$,`, parse float, compare with ±1e-6 tolerance.
+- **Dates** — parse `m/d/yy(yy)`; 2-digit years 70–99 → 1900s, 00–69 → 2000s; fallback to `Date.parse`.
+- **Category** — strip leading codes (`4007 Individuals` → `Individuals`), extract tail from colon chains (`A:B:C` → `C`), known-aliases map, substring-contains as last resort.
+- **Name** — direct match, then employer fallback: `leftName == rightEmployer` or `rightName == leftEmployer`. `matchDetail.mode` records `name_to_name`, `left_name_to_right_employer`, or `right_name_to_left_employer`.
+- **Text (default)** — case-insensitive, whitespace-normalized.
 
-**Persistence:** Save-as-default stores the config per format pair in `compare_configs`. Schema keeps `compare_configs.compare_fields[].required` *and* legacy `minimum_match_count` for backward compat — but `minimum_match_count` is no longer consulted by the matcher; we now write the count of visible (Required) columns into it as a courtesy for older clients. sessionStorage caches per import.
+**Persistence:** Save-as-default stores the config per format pair in `compare_configs`. `compare_fields[].required` is the source of truth. `minimum_match_count` is kept in the schema and written as the count of visible (Required) columns purely as a courtesy for older clients — **the matcher no longer reads it**, it uses the hardcoded `MIN_MATCHES_FOR_PAIR = 2`. sessionStorage caches per import.
 
 **Row classification & colors (`CompareResultsTable`)** — judged on **visible (Required) fields only**, so hiding a column also removes it from the verdict:
 
@@ -56,11 +119,13 @@ Normalization: amounts strip `$,`, dates parse `m/d/yy(yy)`, category strips cod
 | Red | False | One or more *visible* compare fields did not match |
 | Green | Edited → Truth | Row was corrected by editing and now fully matches |
 
-> **Theme:** white/light throughout. All backgrounds are `#fff`/`#f9fafb`/`#f3f4f6`. Primary buttons stay dark (`#111827`) for contrast. Active tabs are blue (`#1d4ed8`). **Do not reintroduce dark backgrounds.**
+> **Theme:** white/light throughout. All backgrounds are `#fff`/`#f9fafb`/`#f3f4f6` (a few light `linear-gradient` panels are fine). Primary buttons stay dark (`#111827`) for contrast. Active tabs are blue (`#1d4ed8`). **Do not reintroduce dark backgrounds.**
 
 **Filter bar** above the table: All / Truth / Conditional Truth / False with live counts. `rowFilter` state lives in `CompareFormattedData` (not in the table) so the export can read it. Table maintains column min-widths so layout is stable across counts.
 
-**Row editing:** Edit button on Conditional Truth, False, and Green rows. Inline edit mode turns all left/right cells into inputs; compare-field columns update live. Save re-scores + appends a new version to history; Cancel discards. Hovering an edited row reveals full version history (type per version, field results, exact diffs). Persisted to `row_edits`.
+**Search + hide-one-sided** (above the filter bar): a free-text search box (`searchQuery`) does a case-insensitive substring match against every cell on both the left and right side; a "Hide one-sided rows" checkbox (`hideStandalone`) drops standalone (isStandalone) pairs from view. Both states live in `CompareFormattedData` and are passed to `CompareResultsTable` and to `exportCSV` / `exportExcel`, so the exported view always mirrors the on-screen view. Counts on the filter chips reflect `hideStandalone` (they shrink when one-sided rows are hidden) but **not** `searchQuery` — search narrows the visible rows within a type without rewriting the type populations. The unmatched export also respects `searchQuery` (one-sided toggle has no effect there).
+
+**Row editing:** Edit button on Conditional Truth, False, and Green rows. Inline edit mode turns all left/right cells into inputs; compare-field columns update live. Save re-scores + appends a new version to history; Cancel discards. Hovering an edited row reveals full version history (type per version, field results, exact diffs). Persisted to `row_edits.versions` as a JSONB array of `{label, timestamp, type, leftRow, rightRow, matchDetail}`.
 
 ## Navigation / URL persistence
 
@@ -74,7 +139,7 @@ URL params drive page state across refreshes:
 | `?page=formats`             | Manage Formats |
 | `?page=guide`               | User Guide |
 
-`importMeta` is re-fetched on refresh from the URL; `formattedPanels` is cached in `sessionStorage` per `importId`.
+`importMeta` is re-fetched on refresh from the URL; `formattedPanels` is cached in `sessionStorage` per `importId` (`panels_${importId}`).
 
 ## Export
 
@@ -90,34 +155,36 @@ Row 1 is a merged section header: `Left panel title · Right panel title · Do t
 | Results | Truth / Conditional / False | Only that type |
 | Unmatched | — | Only unmatched left + right rows |
 
-Excel extras: row colors match the compare page (Conditional → light blue, False → light red, Edited→Truth → light green, Unmatched → light yellow, Truth → no fill). TRUE/FALSE cells in compare columns get green/red fill. Frozen header rows 1–2, auto-fit widths.
+Excel extras: row colors match the compare page (Conditional → light blue, False → light red, Edited→Truth → light green, Unmatched → light yellow, Truth → no fill). TRUE/FALSE cells in compare columns get green/red fill (overrides row color). Frozen header rows 1–2, auto-fit widths.
 
-Summary/totals rows are auto-filtered out.
+Summary/totals rows are auto-filtered out (`isSummaryRow` heuristic in `exportUtils.js`).
 
 ## Database
 
 | Table | Purpose |
 |---|---|
 | `imports` | One row per import session |
-| `import_files` | File A/B metadata (name, headers, row count) |
-| `import_rows` | Raw rows (JSONB per row, batched 500/insert) |
-| `import_mappings` | Saved mappings (`panel_key`, `file_side`, `format_key`, `mapping` JSONB) |
-| `formats` | User-defined formats (`key`, `label`, `headers` JSONB array) |
-| `compare_configs` | Per-format-pair compare settings (`compare_fields[].required` + legacy `minimum_match_count`) |
-| `row_edits` | Per-pair edit history (`import_id`, `pair_id`, `versions` JSONB array) |
+| `import_files` | File A/B metadata (name, headers JSONB, row_count); `side` is `A`/`B` |
+| `import_rows` | Raw rows (JSONB per row, batched 500/insert); `UNIQUE(file_id, row_index)` |
+| `import_mappings` | Saved mappings (`panel_key`, `file_side`, `format_key`, `mapping` JSONB); `UNIQUE(import_id, panel_key)` |
+| `formats` | User-defined formats (`key` UNIQUE, `label`, `headers` JSONB array) |
+| `compare_configs` | Per-format-pair compare settings (`compare_fields` JSONB with `[].required`, legacy `minimum_match_count`); `UNIQUE(left_format_key, right_format_key)` |
+| `row_edits` | Per-pair edit history (`import_id`, `pair_id`, `versions` JSONB array); `UNIQUE(import_id, pair_id)` |
 
-All tables auto-created on backend startup via `initDb()`. Idempotent schema also in `backend/migrations/schema.sql`. QBO + LGL seeded via `ON CONFLICT DO NOTHING`.
+All tables auto-created on backend startup via `initDb()` (`server.js`). Idempotent mirror in `backend/migrations/schema.sql`. QBO + LGL seeded via `ON CONFLICT (key) DO NOTHING`.
 
 ## Env
 
 ```
 PORT=5020
 DATABASE_URL=postgres://app:secret@localhost:5432/accounting
+# or, as a fallback, individual vars:
+DB_HOST=localhost  DB_PORT=5432  DB_NAME=accounting  DB_USER=app  DB_PASSWORD=...
 ```
 
 ## Run locally
 
 ```bash
-cd backend  && npm install && npm run dev   # :5020
+cd backend  && npm install && npm run dev   # :5020 (nodemon)
 cd frontend && npm install && npm run dev   # :5173 (Vite)
 ```
