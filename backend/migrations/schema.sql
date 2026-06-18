@@ -41,9 +41,13 @@ CREATE TABLE IF NOT EXISTS formats (
   key        TEXT UNIQUE NOT NULL,
   label      TEXT NOT NULL,
   headers    JSONB NOT NULL DEFAULT '[]',
+  labels     JSONB NOT NULL DEFAULT '[]',
+  default_mapping JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE formats ADD COLUMN IF NOT EXISTS labels JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE formats ADD COLUMN IF NOT EXISTS default_mapping JSONB NOT NULL DEFAULT '{}';
 
 CREATE TABLE IF NOT EXISTS row_edits (
   id         SERIAL PRIMARY KEY,

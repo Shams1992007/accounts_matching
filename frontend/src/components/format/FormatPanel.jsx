@@ -94,6 +94,24 @@ export default function FormatPanel({
 
   const canShow = formatHeaders.length > 0 && formatHeaders.every((h) => mapping?.[h]);
 
+  // Pre-fill the mapping from the format's learned default when there is no saved
+  // mapping for this import yet. Only fills columns whose default source-column is
+  // actually present in this file. Dropdowns stay editable so the user can override.
+  useEffect(() => {
+    if (formatsLoading) return;
+    if (confirmed) return; // a saved mapping is already in use
+    if (!activeFormat) return;
+    if (Object.keys(mapping || {}).length > 0) return; // already has selections
+    const def = activeFormat.defaultMapping || {};
+    const src = new Set(sourceHeaders);
+    const next = {};
+    for (const h of formatHeaders) {
+      const col = def[h];
+      if (col && src.has(col)) next[h] = col;
+    }
+    if (Object.keys(next).length > 0) setMapping(next);
+  }, [formatsLoading, confirmed, activeFormat, sourceHeaders, formatHeaders, mapping]);
+
   const sortOptions = useMemo(() => {
     return getFormatSortOptions(formatHeaders);
   }, [formatHeaders]);
@@ -296,10 +314,10 @@ export default function FormatPanel({
         Map once, save, and it will be reused for this import unless changed.
       </div>
 
-      {formatHeaders.map((h) => (
+      {formatHeaders.map((h, i) => (
         <MappingRow
           key={h}
-          label={h}
+          label={activeFormat?.labels?.[i] || h}
           headers={sourceHeaders}
           value={mapping[h]}
           onChange={(v) => {

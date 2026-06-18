@@ -6,7 +6,8 @@ const router = express.Router();
 router.get("/", async (_req, res) => {
   try {
     const r = await pool.query(
-      `SELECT id, key, label, headers, created_at AS "createdAt", updated_at AS "updatedAt"
+      `SELECT id, key, label, headers, labels, default_mapping AS "defaultMapping",
+              created_at AS "createdAt", updated_at AS "updatedAt"
        FROM formats
        ORDER BY id ASC`
     );
@@ -30,12 +31,19 @@ router.post("/", async (req, res) => {
   if (cleaned.length === 0)
     return res.status(400).json({ error: "headers must contain at least one non-empty value" });
 
+  // labels: optional parallel array of canonical display names. Default to headers.
+  const rawLabels = Array.isArray(req.body?.labels) ? req.body.labels : [];
+  const cleanedLabels = cleaned.map((h, i) => {
+    const l = String(rawLabels[i] || "").trim();
+    return l || h;
+  });
+
   try {
     const r = await pool.query(
-      `INSERT INTO formats (key, label, headers)
-       VALUES ($1, $2, $3::jsonb)
-       RETURNING id, key, label, headers, created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [key, label, JSON.stringify(cleaned)]
+      `INSERT INTO formats (key, label, headers, labels)
+       VALUES ($1, $2, $3::jsonb, $4::jsonb)
+       RETURNING id, key, label, headers, labels, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [key, label, JSON.stringify(cleaned), JSON.stringify(cleanedLabels)]
     );
     return res.status(201).json(r.rows[0]);
   } catch (e) {
@@ -63,13 +71,21 @@ router.put("/:id", async (req, res) => {
   if (cleaned.length === 0)
     return res.status(400).json({ error: "headers must contain at least one non-empty value" });
 
+  // labels: optional. When provided, align to headers (fallback to header per index).
+  // When omitted, leave the existing labels column untouched.
+  const hasLabels = Array.isArray(req.body?.labels);
+  const cleanedLabels = hasLabels
+    ? cleaned.map((h, i) => String(req.body.labels[i] || "").trim() || h)
+    : null;
+
   try {
     const r = await pool.query(
       `UPDATE formats
-       SET key = $1, label = $2, headers = $3::jsonb, updated_at = now()
-       WHERE id = $4
-       RETURNING id, key, label, headers, created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [key, label, JSON.stringify(cleaned), id]
+       SET key = $1, label = $2, headers = $3::jsonb,
+           labels = COALESCE($4::jsonb, labels), updated_at = now()
+       WHERE id = $5
+       RETURNING id, key, label, headers, labels, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [key, label, JSON.stringify(cleaned), cleanedLabels ? JSON.stringify(cleanedLabels) : null, id]
     );
     if (!r.rows.length) return res.status(404).json({ error: "Format not found" });
     return res.json(r.rows[0]);

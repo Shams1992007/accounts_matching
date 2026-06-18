@@ -74,9 +74,18 @@ async function initDb() {
       key        TEXT UNIQUE NOT NULL,
       label      TEXT NOT NULL,
       headers    JSONB NOT NULL DEFAULT '[]',
+      labels     JSONB NOT NULL DEFAULT '[]',
+      default_mapping JSONB NOT NULL DEFAULT '{}',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+
+    -- labels: per-column canonical display name shown as the Format-page left caption,
+    -- parallel (by index) to headers. Added after initial release.
+    ALTER TABLE formats ADD COLUMN IF NOT EXISTS labels JSONB NOT NULL DEFAULT '[]';
+    -- default_mapping: learned header -> source-column mapping, used to pre-fill the
+    -- Format page so the user need not re-select every column. Updated on each save.
+    ALTER TABLE formats ADD COLUMN IF NOT EXISTS default_mapping JSONB NOT NULL DEFAULT '{}';
 
     CREATE TABLE IF NOT EXISTS compare_configs (
       id                  SERIAL PRIMARY KEY,
