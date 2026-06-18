@@ -1,0 +1,845 @@
+{
+  "formats": [
+    {
+      "id": 2,
+      "key": "LGL",
+      "headers": [
+        "Date",
+        "Name",
+        "Employer/Organization",
+        "Category",
+        "Account",
+        "Amount"
+      ]
+    },
+    {
+      "id": 7,
+      "key": "QBO_CLIENT_DUE_RECON",
+      "headers": [
+        "Date",
+        "Number",
+        "Name",
+        "Amount"
+      ]
+    },
+    {
+      "id": 8,
+      "key": "ONEBILL_CLIENT_DUE_RECON",
+      "headers": [
+        "Date",
+        "Number",
+        "Name",
+        "Amount"
+      ]
+    },
+    {
+      "id": 20,
+      "key": "MIRITEL_QBO_INVOICE_RECON",
+      "headers": [
+        "Date",
+        "Number",
+        "Name",
+        "Amount"
+      ]
+    },
+    {
+      "id": 19,
+      "key": "MIRITEL_ONEBILL_INVOICE_RECON",
+      "headers": [
+        "Date",
+        "Number",
+        "Name",
+        "Amount"
+      ]
+    },
+    {
+      "id": 1,
+      "key": "QBO",
+      "headers": [
+        "Date",
+        "Name",
+        "Employer/Organization",
+        "Category",
+        "Account",
+        "Amount"
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "id": 158,
+      "import_id": 100,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    },
+    {
+      "id": 159,
+      "import_id": 100,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 83,
+      "import_id": 50,
+      "format_key": "MIRITEL_QBO_REPORT",
+      "mapping": {
+        "Num": "Num",
+        "Date": "Date",
+        "Open balance": "Open balance",
+        "Customer full name": "Customer full name"
+      }
+    },
+    {
+      "id": 84,
+      "import_id": 50,
+      "format_key": "MIRITEL_ONEBILL",
+      "mapping": {
+        "Created Date": "Created Date",
+        "Invoice Number": "Invoice Number",
+        "Subscriber Name": "Subscriber Name",
+        "Total Due Amount": "Total Due Amount"
+      }
+    },
+    {
+      "id": 133,
+      "import_id": 76,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 134,
+      "import_id": 76,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 135,
+      "import_id": 77,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 136,
+      "import_id": 77,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 137,
+      "import_id": 79,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 32,
+      "import_id": 24,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 33,
+      "import_id": 24,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 1,
+      "import_id": 1,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 2,
+      "import_id": 1,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Memo/Description"
+      }
+    },
+    {
+      "id": 6,
+      "import_id": 6,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 7,
+      "import_id": 6,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 100,
+      "import_id": 60,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 101,
+      "import_id": 60,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 104,
+      "import_id": 62,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 105,
+      "import_id": 62,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 22,
+      "import_id": 18,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "First Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 23,
+      "import_id": 18,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 28,
+      "import_id": 21,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 24,
+      "import_id": 20,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 27,
+      "import_id": 20,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 29,
+      "import_id": 21,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 34,
+      "import_id": 25,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 35,
+      "import_id": 25,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 38,
+      "import_id": 27,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 39,
+      "import_id": 27,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 124,
+      "import_id": 71,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 125,
+      "import_id": 71,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 126,
+      "import_id": 72,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 127,
+      "import_id": 72,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 138,
+      "import_id": 79,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 139,
+      "import_id": 82,
+      "format_key": "MIRITEL_QBO_INVOICE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 140,
+      "import_id": 82,
+      "format_key": "MIRITEL_ONEBILL_INVOICE_RECON",
+      "mapping": {
+        "Date": "Original Invoice Date",
+        "Name": "Subscriber Name",
+        "Amount": "Invoice Amount",
+        "Number": "Original Invoice Date"
+      }
+    },
+    {
+      "id": 87,
+      "import_id": 52,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 88,
+      "import_id": 52,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 93,
+      "import_id": 56,
+      "format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Created Date",
+        "Name": "Subscriber Name",
+        "Amount": "Total Due Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 94,
+      "import_id": 56,
+      "format_key": "QBO_CLIENT_DUE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Customer full name",
+        "Amount": "Open balance",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 141,
+      "import_id": 83,
+      "format_key": "MIRITEL_QBO_INVOICE_RECON",
+      "mapping": {
+        "Date": "Date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Number": "Num"
+      }
+    },
+    {
+      "id": 142,
+      "import_id": 83,
+      "format_key": "MIRITEL_ONEBILL_INVOICE_RECON",
+      "mapping": {
+        "Date": "Original Invoice Date",
+        "Name": "Subscriber Name",
+        "Amount": "Invoice Amount",
+        "Number": "Invoice Number"
+      }
+    },
+    {
+      "id": 143,
+      "import_id": 92,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 144,
+      "import_id": 92,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Line description": "Description"
+      }
+    },
+    {
+      "id": 145,
+      "import_id": 93,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    },
+    {
+      "id": 146,
+      "import_id": 93,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 147,
+      "import_id": 94,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 148,
+      "import_id": 94,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    },
+    {
+      "id": 149,
+      "import_id": 95,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    },
+    {
+      "id": 150,
+      "import_id": 95,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 151,
+      "import_id": 96,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    },
+    {
+      "id": 152,
+      "import_id": 96,
+      "format_key": "LGL",
+      "mapping": {
+        "Date": "Gift date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Payment type",
+        "Category": "Gift category",
+        "Employer/Organization": "Employer/Organization"
+      }
+    },
+    {
+      "id": 157,
+      "import_id": 97,
+      "format_key": "QBO",
+      "mapping": {
+        "Date": "Transaction date",
+        "Name": "Name",
+        "Amount": "Amount",
+        "Account": "Item split account",
+        "Category": "Full name",
+        "Employer/Organization": "Description"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "id": 11,
+      "left_format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "right_format_key": "QBO_CLIENT_DUE_RECON",
+      "compare_fields": [
+        {
+          "key": "date",
+          "label": "Date",
+          "required": true,
+          "leftField": "Date",
+          "rightField": "Date"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "required": true,
+          "leftField": "Name",
+          "rightField": "Name"
+        },
+        {
+          "key": "custom-1780692168199-2",
+          "label": "Invoice",
+          "required": true,
+          "leftField": "Number",
+          "rightField": "Number"
+        },
+        {
+          "key": "custom-1780692178373-3",
+          "label": "Amount",
+          "required": true,
+          "leftField": "Amount",
+          "rightField": "Amount"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "left_format_key": "QBO",
+      "right_format_key": "LGL",
+      "compare_fields": [
+        {
+          "key": "date",
+          "label": "Date",
+          "required": true,
+          "leftField": "Date",
+          "rightField": "Date"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "required": true,
+          "leftField": "Name",
+          "rightField": "Name"
+        },
+        {
+          "key": "category",
+          "label": "Category",
+          "required": true,
+          "leftField": "Category",
+          "rightField": "Category"
+        },
+        {
+          "key": "amount",
+          "label": "Amount",
+          "required": true,
+          "leftField": "Amount",
+          "rightField": "Amount"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "left_format_key": "QBO",
+      "right_format_key": "QBO",
+      "compare_fields": [
+        {
+          "key": "date",
+          "label": "Date",
+          "leftField": "Date",
+          "rightField": "Date"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "leftField": "Name",
+          "rightField": "Name"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "left_format_key": "QBO_CLIENT_DUE_RECON",
+      "right_format_key": "ONEBILL_CLIENT_DUE_RECON",
+      "compare_fields": [
+        {
+          "key": "date",
+          "label": "Date",
+          "leftField": "Date",
+          "rightField": "Date"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "leftField": "Name",
+          "rightField": "Name"
+        },
+        {
+          "key": "custom-1778410749028-3",
+          "label": "Number",
+          "leftField": "Number",
+          "rightField": "Number"
+        },
+        {
+          "key": "custom-1778410756207-3",
+          "label": "Amount",
+          "leftField": "Amount",
+          "rightField": "Amount"
+        }
+      ]
+    }
+  ]
+}
