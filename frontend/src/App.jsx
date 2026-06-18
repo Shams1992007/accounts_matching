@@ -107,7 +107,12 @@ export default function App() {
       <nav className="appNav">
         <button
           className={`appNavBtn ${isImportFlow ? "appNavActive" : ""}`}
-          onClick={() => goTo("import")}
+          onClick={() => {
+            setImportMeta(null);
+            setFormattedPanels({ panel1: null, panel2: null });
+            window.history.replaceState(null, "", window.location.pathname);
+            setPageInner("import");
+          }}
         >
           Import & Match
         </button>

@@ -4,6 +4,13 @@
   margin-top: 10px;
 }
 
+.tableWrapNoScrollbar {
+  scrollbar-width: none;
+}
+.tableWrapNoScrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .dataTable {
   border-collapse: collapse;
   width: 100%;

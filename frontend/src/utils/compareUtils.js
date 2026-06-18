@@ -100,6 +100,26 @@ export function normalizeNameLike(v) {
     .trim();
 }
 
+// Word-token overlap test: two normalized name-like strings count as a partial
+// match when they share at least one whole word of length >= MIN_NAME_TOKEN_LEN.
+// "Shell Oil" vs "Shell" → match on "Shell". "John" vs "Johnson" → no match
+// (tokens differ as whole words). Defensive against single-letter coincidences.
+const MIN_NAME_TOKEN_LEN = 3;
+
+function nameTokens(s) {
+  if (!s) return [];
+  return s.split(/\s+/).filter((t) => t.length >= MIN_NAME_TOKEN_LEN);
+}
+
+function sharesNameToken(a, b) {
+  const at = nameTokens(a);
+  if (!at.length) return null;
+  const bt = new Set(nameTokens(b));
+  if (!bt.size) return null;
+  for (const t of at) if (bt.has(t)) return t;
+  return null;
+}
+
 export function namesMatchWithFallback(rowA, rowB, leftField, rightField) {
   const leftName = normalizeNameLike(getFieldValue(rowA, leftField));
   const rightName = normalizeNameLike(getFieldValue(rowB, rightField));
@@ -107,14 +127,10 @@ export function namesMatchWithFallback(rowA, rowB, leftField, rightField) {
   const rightEmployer = normalizeNameLike(getFieldValue(rowB, "Employer/Organization"));
   const leftEmployer = normalizeNameLike(getFieldValue(rowA, "Employer/Organization"));
 
+  // Pass 1: strict equality (preferred — keeps Truth highlights clean).
   if (leftName && rightName && leftName === rightName) {
-    return {
-      ok: true,
-      mode: "name_to_name",
-      reason: "Exact name match",
-    };
+    return { ok: true, mode: "name_to_name", reason: "Exact name match" };
   }
-
   if (leftName && rightEmployer && leftName === rightEmployer) {
     return {
       ok: true,
@@ -122,12 +138,39 @@ export function namesMatchWithFallback(rowA, rowB, leftField, rightField) {
       reason: "Matched because left Name = right Employer/Organization",
     };
   }
-
   if (rightName && leftEmployer && rightName === leftEmployer) {
     return {
       ok: true,
       mode: "right_name_to_left_employer",
       reason: "Matched because right Name = left Employer/Organization",
+    };
+  }
+
+  // Pass 2: word-token overlap. Catches "Shell Oil" ↔ "Shell" and similar
+  // cases where one side carries a fuller form of the same entity. All
+  // partial matches surface as Conditional Truth in the UI.
+  const nameNameShared = sharesNameToken(leftName, rightName);
+  if (nameNameShared) {
+    return {
+      ok: true,
+      mode: "name_to_name_partial",
+      reason: `Names share the word "${nameNameShared}"`,
+    };
+  }
+  const leftNameRightEmployerShared = sharesNameToken(leftName, rightEmployer);
+  if (leftNameRightEmployerShared) {
+    return {
+      ok: true,
+      mode: "left_name_to_right_employer_partial",
+      reason: `Left Name and right Employer/Organization share the word "${leftNameRightEmployerShared}"`,
+    };
+  }
+  const rightNameLeftEmployerShared = sharesNameToken(rightName, leftEmployer);
+  if (rightNameLeftEmployerShared) {
+    return {
+      ok: true,
+      mode: "right_name_to_left_employer_partial",
+      reason: `Right Name and left Employer/Organization share the word "${rightNameLeftEmployerShared}"`,
     };
   }
 
@@ -142,7 +185,16 @@ export function valuesEqual(fieldType, a, b, options = {}) {
   const { rowA = null, rowB = null, leftField = "", rightField = "", label = "" } = options;
 
   if (fieldType === "date") {
-    const ok = normalizeDate(a) === normalizeDate(b);
+    const na = normalizeDate(a);
+    const nb = normalizeDate(b);
+    if (!na || !nb) {
+      return {
+        ok: false,
+        mode: "date_mismatch",
+        reason: "Date missing on one or both sides",
+      };
+    }
+    const ok = na === nb;
     return {
       ok,
       mode: ok ? "date_match" : "date_mismatch",
@@ -193,7 +245,16 @@ export function valuesEqual(fieldType, a, b, options = {}) {
     return namesMatchWithFallback(rowA, rowB, leftField, rightField);
   }
 
-  const ok = normalizeText(a) === normalizeText(b);
+  const na = normalizeText(a);
+  const nb = normalizeText(b);
+  if (!na || !nb) {
+    return {
+      ok: false,
+      mode: "text_mismatch",
+      reason: "Text missing on one or both sides",
+    };
+  }
+  const ok = na === nb;
   return {
     ok,
     mode: ok ? "text_match" : "text_mismatch",
@@ -241,8 +302,12 @@ export function scorePair(rowA, rowB, compareFields) {
 export function amountDifference(rowA, rowB, amountLeftField, amountRightField) {
   const a = normalizeAmount(getFieldValue(rowA, amountLeftField));
   const b = normalizeAmount(getFieldValue(rowB, amountRightField));
-  if (a == null || b == null) return "";
-  return (a - b).toFixed(2);
+  // For standalone / one-sided rows (and any pair where only one side has an
+  // amount) treat the missing side as 0 so the diff reflects the full present
+  // amount. The raw amount cell stays blank — we don't substitute 0 there.
+  // Only when BOTH sides are missing do we leave the diff blank.
+  if (a == null && b == null) return "";
+  return ((a ?? 0) - (b ?? 0)).toFixed(2);
 }
 
 // The Required/Optional flag now controls *display* only — Required = column shown

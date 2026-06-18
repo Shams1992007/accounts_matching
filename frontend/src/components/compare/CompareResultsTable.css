@@ -119,10 +119,44 @@
   opacity: 0.8;
 }
 
+.compareJumpBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.compareJumpLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.compareJumpBtn {
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.compareJumpBtn:hover {
+  background: #e0e7ff;
+  border-color: #6366f1;
+  color: #1e1b70;
+}
+
+/* Each pane is its own scroll container so the in-table sticky thead actually
+   sticks during vertical scroll. Vertical scroll is synced between all three
+   panes via JS so rows stay aligned. The outer wrap is just a frame. */
 .compareResultsTableWrap {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: calc(100vh - 320px);
   -webkit-overflow-scrolling: touch;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
@@ -130,50 +164,140 @@
   width: 100%;
 }
 
-.compareResultsTable {
-  min-width: 100%;
+.compareTriPaneRow {
+  display: flex;
+  align-items: stretch;
+  max-height: calc(100vh - 320px);
 }
 
-.compareResultsTable {
+.compareScrollPane {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.compareScrollPane::-webkit-scrollbar {
+  display: none;
+}
+
+.comparePaneLeft {
+  border-right: 1px solid #e5e7eb;
+}
+.comparePaneRight {
+  border-right: 2px solid #cbd5e1;
+}
+
+/* Match pane keeps its native vertical scrollbar — it's the visible "owner"
+   of vertical scroll. Dragging it scrolls all three panes in sync. */
+.comparePaneFixed {
+  flex: 0 0 auto;
+  background: #ffffff;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* The match section just renders short TRUE/FALSE flags, a tiny Amount Diff
+   number and the Edit/History buttons — give it tight columns so it doesn't
+   eat half the screen. Cell *height* stays identical to the output panes
+   (height + line-height inherited from .compareSubTable above) so rows line
+   up across all three sub-tables; only horizontal padding and font shrink. */
+.comparePaneFixed .compareSubTable th,
+.comparePaneFixed .compareSubTable td {
+  padding-left: 6px;
+  padding-right: 6px;
+  min-width: 56px;
+  font-size: 12px;
+  text-align: center;
+}
+.comparePaneFixed .compareSubTable .editActionCell,
+.comparePaneFixed .compareSubTable .editActions {
+  min-width: unset;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.comparePaneFixed .editRowBtn,
+.comparePaneFixed .historyRowBtn,
+.comparePaneFixed .editSaveBtn,
+.comparePaneFixed .editCancelBtn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* Compare-field column headers and TRUE/FALSE cells double as jump triggers —
+   clicking any of them aligns the matching column at the left edge of each
+   output pane (same as the top "Jump to" pills). */
+.compareMatchJumpable {
+  cursor: pointer;
+  user-select: none;
+}
+.comparePaneFixed thead th.compareMatchJumpable:hover {
+  background: #e0e7ff;
+  color: #1e1b70;
+}
+.comparePaneFixed tbody td.compareMatchJumpable:hover {
+  outline: 1px solid #6366f1;
+  outline-offset: -1px;
+}
+
+.compareSubTable {
   width: 100%;
   border-collapse: collapse;
 }
 
-.compareResultsTable th,
-.compareResultsTable td {
+/* Lock every row in all three sub-tables to identical metrics so rows align
+   horizontally across the three panes. line-height + vertical padding +
+   border-box give a single source of truth for cell height. Tiny per-row
+   divergence (different font-size or padding) compounds visibly across 100+
+   rows, so this is enforced with high specificity. */
+.compareSubTable th,
+.compareSubTable td {
   border-bottom: 1px solid #e5e7eb;
   padding: 8px;
   white-space: nowrap;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   min-width: 100px;
+  height: 37px;
+  line-height: 20px;
+  font-size: 13px;
+  box-sizing: border-box;
 }
 
-.compareResultsTable .compareSpacer,
-.compareResultsTable .editActionCell,
-.compareResultsTable .editActions {
+.compareSubTable .editActionCell,
+.compareSubTable .editActions {
   min-width: unset;
 }
 
-.compareResultsTable thead th {
+.compareSubTable thead th {
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
   position: sticky;
   z-index: 2;
+  height: 37px;
+  line-height: 20px;
 }
 
-.compareResultsTable thead tr:first-child th {
+.compareSubTable thead tr:first-child th {
   top: 0;
 }
 
-.compareResultsTable thead tr:nth-child(2) th {
-  top: 38px;
+.compareSubTable thead tr:nth-child(2) th {
+  top: 37px;
 }
 
-.compareSpacer {
-  min-width: 12px;
-  width: 12px;
-  background: #ffffff;
+/* Single shared horizontal scrollbar for the two output panes — sticky to the
+   bottom of the results wrap so it stays reachable as you scroll vertically. */
+.compareSharedScroll {
+  position: sticky;
+  bottom: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  z-index: 3;
+}
+.compareSharedScrollInner {
+  height: 1px;
 }
 
 .compareTrue {

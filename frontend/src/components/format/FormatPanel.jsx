@@ -18,6 +18,8 @@ export default function FormatPanel({
   defaultFileSide,
   defaultFormatKey,
   onFormattedChange,
+  tableScrollRef,
+  hideTableScrollbar,
 }) {
   const saved = getSavedPanel(importMeta, panelKey);
 
@@ -387,7 +389,12 @@ export default function FormatPanel({
             <b>{file?.name}</b> → <span>{activeFormat?.label}</span>
           </div>
 
-          <FormattedTable headers={formatHeaders} rows={formattedRows} />
+          <FormattedTable
+            headers={formatHeaders}
+            rows={formattedRows}
+            scrollRef={tableScrollRef}
+            hideScrollbar={hideTableScrollbar}
+          />
         </>
       )}
     </div>

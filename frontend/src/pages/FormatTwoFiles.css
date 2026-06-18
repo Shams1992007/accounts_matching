@@ -1,7 +1,13 @@
+/* Break out of the #root container (max-width: 1280px, 2rem side padding) so
+   the two panels use the full viewport width. */
 .formatPage {
-  max-width: 1300px;
-  margin: 30px auto;
-  padding: 0 16px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 16px;
+  margin-bottom: 24px;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .formatPageSmall {
@@ -32,8 +38,15 @@
 .formatPageGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Grid items default to min-width: auto, so wide table content pushes the
+   cell beyond its 1fr share and the page scrolls horizontally. Clamp each
+   cell so the table inside actually scrolls instead of expanding the cell. */
+.formatPageGrid > * {
+  min-width: 0;
 }
 
 /* Mobile tab bar — hidden on desktop */
@@ -99,4 +112,37 @@
 .formatPageError {
   color: crimson;
   margin-top: 10px;
+}
+
+/* Single shared horizontal scrollbar for both formatted tables. Sticky at the
+   bottom of the viewport so it's reachable without scrolling the page all the
+   way down. */
+.formatSharedScroll {
+  position: sticky;
+  bottom: 0;
+  margin-top: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  z-index: 5;
+}
+
+.formatSharedScrollInner {
+  height: 1px;
+}
+
+@media (max-width: 768px) {
+  /* On mobile only one panel is shown at a time and each table keeps its own
+     native scrollbar — no need for the shared one. Restore the per-table
+     scrollbar that was suppressed via tableWrapNoScrollbar. */
+  .formatSharedScroll {
+    display: none;
+  }
+  .formatPageGrid .tableWrapNoScrollbar {
+    scrollbar-width: auto;
+  }
+  .formatPageGrid .tableWrapNoScrollbar::-webkit-scrollbar {
+    display: initial;
+  }
 }

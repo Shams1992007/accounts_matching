@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   amountDifference,
   compareBoolClass,
@@ -10,16 +10,24 @@ import "./CompareResultsTable.css";
 
 // Row color is judged on *visible* (Required) fields only — hidden Optional
 // fields are not part of what the user sees, so they don't influence the verdict.
+// A name match that isn't a strict name-to-name hit (employer fallback, or any
+// of the new partial-token matches) downgrades the row from Truth to
+// Conditional Truth so the user can spot it.
+const SOFT_NAME_MODES = new Set([
+  "left_name_to_right_employer",
+  "right_name_to_left_employer",
+  "name_to_name_partial",
+  "left_name_to_right_employer_partial",
+  "right_name_to_left_employer_partial",
+]);
+
 function getRowType(pair, visibleCompareFields, nameCompareField) {
   const nameVisible = nameCompareField && visibleCompareFields.some((f) => f.key === nameCompareField.key);
   const nameDetail = nameVisible ? pair?.matchDetail?.[nameCompareField.key] : null;
-  const isEmployerFallback =
-    nameDetail?.ok &&
-    (nameDetail?.mode === "left_name_to_right_employer" ||
-      nameDetail?.mode === "right_name_to_left_employer");
+  const isSoftNameMatch = nameDetail?.ok && SOFT_NAME_MODES.has(nameDetail?.mode);
   const allMatch = visibleCompareFields.every((f) => pair.matchDetail?.[f.key]?.ok);
   if (!allMatch) return "false";
-  if (isEmployerFallback) return "conditional";
+  if (isSoftNameMatch) return "conditional";
   return "truth";
 }
 
@@ -143,6 +151,17 @@ export default function CompareResultsTable({
   const [editingPairId, setEditingPairId] = useState(null);
   const [editDraft, setEditDraft] = useState({ left: {}, right: {} });
   const [historyModalVersions, setHistoryModalVersions] = useState(null);
+
+  // Synced horizontal scrolling between left and right output panes (matches
+  // the Format-page behaviour). A single sticky scrollbar at the bottom of the
+  // results wrap drives both panes; scrolling either pane directly also syncs
+  // the other. The fixed match section never scrolls horizontally.
+  const leftPaneRef = useRef(null);
+  const rightPaneRef = useRef(null);
+  const matchPaneRef = useRef(null);
+  const compareSharedScrollRef = useRef(null);
+  const [compareSharedWidth, setCompareSharedWidth] = useState(0);
+  const compareSyncingRef = useRef(false);
 
   const visibleCompareFields = useMemo(
     () => compareFields.filter(isFieldRequired),
@@ -297,6 +316,116 @@ export default function CompareResultsTable({
     { key: "false", label: "False", count: counts.false },
   ];
 
+  // Quick-jump: move each output pane independently so the matched column
+  // lands at that pane's left edge — but never past the natural scroll range,
+  // so we don't reveal empty space when the column already fits. Each pane is
+  // clamped to its own [0, scrollWidth − clientWidth], so the two panes may
+  // end up at different scrollLefts (which is the point — column alignment
+  // beats pixel alignment for this action). Pixel sync is suppressed for two
+  // animation frames so the writes' async scroll events don't undo the jump.
+  const jumpToField = useCallback((field) => {
+    const leftEl = leftPaneRef.current;
+    const rightEl = rightPaneRef.current;
+    const sharedEl = compareSharedScrollRef.current;
+    if (!leftEl || !rightEl) return;
+
+    const leftIdx = leftPanel.headers.indexOf(field.leftField);
+    const rightIdx = rightPanel.headers.indexOf(field.rightField);
+    const leftTh = leftEl.querySelectorAll("thead tr:nth-child(2) th")[leftIdx];
+    const rightTh = rightEl.querySelectorAll("thead tr:nth-child(2) th")[rightIdx];
+
+    // Compute each column's distance from its own pane's left edge using
+    // getBoundingClientRect. Raw th.offsetLeft is relative to the nearest
+    // positioned ancestor (here .compareResultsWrap), which would otherwise
+    // include the left pane's width when measuring the right pane.
+    const offsetWithinPane = (th, paneEl) => {
+      if (!th || !paneEl) return 0;
+      return th.getBoundingClientRect().left - paneEl.getBoundingClientRect().left + paneEl.scrollLeft;
+    };
+    const leftMax = Math.max(0, leftEl.scrollWidth - leftEl.clientWidth);
+    const rightMax = Math.max(0, rightEl.scrollWidth - rightEl.clientWidth);
+    const leftX = Math.min(offsetWithinPane(leftTh, leftEl), leftMax);
+    const rightX = Math.min(offsetWithinPane(rightTh, rightEl), rightMax);
+
+    compareSyncingRef.current = true;
+    leftEl.scrollLeft = leftX;
+    rightEl.scrollLeft = rightX;
+    if (sharedEl) sharedEl.scrollLeft = leftX;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        compareSyncingRef.current = false;
+      });
+    });
+  }, [leftPanel?.headers, rightPanel?.headers]);
+
+  // Measure both panes' scrollWidth and feed the larger into the shared bottom
+  // scrollbar; re-measure on resize or whenever the dataset changes.
+  useEffect(() => {
+    const measure = () => {
+      const lw = leftPaneRef.current?.scrollWidth || 0;
+      const rw = rightPaneRef.current?.scrollWidth || 0;
+      setCompareSharedWidth(Math.max(lw, rw));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (leftPaneRef.current) ro.observe(leftPaneRef.current);
+    if (rightPaneRef.current) ro.observe(rightPaneRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [visiblePairs.length, leftPanel?.headers?.length, rightPanel?.headers?.length]);
+
+  // Bidirectional sync: horizontal scroll syncs between left pane, right pane,
+  // and the shared bottom bar; vertical scroll syncs between all three panes
+  // (including the fixed match pane) so rows always line up across panes.
+  useEffect(() => {
+    const writeAll = (sourceEl, { x, y }) => {
+      if (compareSyncingRef.current) return;
+      compareSyncingRef.current = true;
+      const setH = (el) => {
+        if (x !== undefined && el && el !== sourceEl) el.scrollLeft = x;
+      };
+      const setV = (el) => {
+        if (y !== undefined && el && el !== sourceEl) el.scrollTop = y;
+      };
+      setH(compareSharedScrollRef.current);
+      setH(leftPaneRef.current);
+      setH(rightPaneRef.current);
+      setV(leftPaneRef.current);
+      setV(rightPaneRef.current);
+      setV(matchPaneRef.current);
+      requestAnimationFrame(() => {
+        compareSyncingRef.current = false;
+      });
+    };
+
+    const onShared = () =>
+      writeAll(compareSharedScrollRef.current, { x: compareSharedScrollRef.current?.scrollLeft ?? 0 });
+    const onLeft = () =>
+      writeAll(leftPaneRef.current, { x: leftPaneRef.current?.scrollLeft ?? 0, y: leftPaneRef.current?.scrollTop ?? 0 });
+    const onRight = () =>
+      writeAll(rightPaneRef.current, { x: rightPaneRef.current?.scrollLeft ?? 0, y: rightPaneRef.current?.scrollTop ?? 0 });
+    const onMatch = () =>
+      writeAll(matchPaneRef.current, { y: matchPaneRef.current?.scrollTop ?? 0 });
+
+    const s = compareSharedScrollRef.current;
+    const l = leftPaneRef.current;
+    const r = rightPaneRef.current;
+    const m = matchPaneRef.current;
+    s?.addEventListener("scroll", onShared, { passive: true });
+    l?.addEventListener("scroll", onLeft, { passive: true });
+    r?.addEventListener("scroll", onRight, { passive: true });
+    m?.addEventListener("scroll", onMatch, { passive: true });
+    return () => {
+      s?.removeEventListener("scroll", onShared);
+      l?.removeEventListener("scroll", onLeft);
+      r?.removeEventListener("scroll", onRight);
+      m?.removeEventListener("scroll", onMatch);
+    };
+  }, [compareSharedWidth]);
+
   return (
     <div className="compareResultsWrap" style={{ position: "relative" }}>
       <div className="compareSearchBar">
@@ -353,223 +482,300 @@ export default function CompareResultsTable({
         .
       </div>
 
-      <div className="compareResultsTableWrap">
-        <table className="compareResultsTable">
-          <thead>
-            <tr>
-              <th colSpan={leftPanel.headers.length}>{leftPanel.title || "Left"}</th>
-              <th className="compareSpacer" />
-              <th colSpan={rightPanel.headers.length}>{rightPanel.title || "Right"}</th>
-              <th className="compareSpacer" />
-              <th colSpan={visibleCompareFields.length + 1}>Do the records match?</th>
-              <th />
-            </tr>
-            <tr>
-              {leftPanel.headers.map((h) => <th key={`lh-${h}`}>{h}</th>)}
-              <th className="compareSpacer" />
-              {rightPanel.headers.map((h) => <th key={`rh-${h}`}>{h}</th>)}
-              <th className="compareSpacer" />
-              {visibleCompareFields.map((f) => (
-                <th key={`cf-${f.key}`} title={`Comparison field: ${f.label}`}>
-                  {f.label}
-                </th>
-              ))}
-              <th>Amount Diff</th>
-              <th />
-            </tr>
-          </thead>
+      {compareFields.length > 0 && (
+        <div className="compareJumpBar">
+          <span className="compareJumpLabel">Jump to:</span>
+          {compareFields.map((f) => (
+            <button
+              key={`jump-${f.key}`}
+              type="button"
+              className="compareJumpBtn"
+              onClick={() => jumpToField(f)}
+              title={`Align both panes on ${f.label}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-          <tbody>
-            {visiblePairs.map((pair) => {
-              const originalPair = pair._originalPair || pair;
-              const rowType = getRowType(pair, visibleCompareFields, nameCompareField);
-              const isEmployerFallback = rowType === "conditional";
-              const edits = rowEdits[originalPair.id];
-              const isEdited = (edits?.versions?.length || 0) > 1;
-              const originalType = edits?.versions?.[0]?.type;
-              const wasEditedToTruth =
-                isEdited && rowType === "truth" &&
-                (originalType === "conditional" || originalType === "false");
-              const canEdit =
-                rowType === "false" || rowType === "conditional" || isEdited;
+      {(() => {
+        // Precompute per-pair display metadata once so each of the three
+        // sub-tables (left output / right output / fixed match section)
+        // renders consistently and stays in lockstep row-by-row.
+        const pairMeta = visiblePairs.map((pair) => {
+          const originalPair = pair._originalPair || pair;
+          const rowType = getRowType(pair, visibleCompareFields, nameCompareField);
+          const isEmployerFallback = rowType === "conditional";
+          const edits = rowEdits[originalPair.id];
+          const isEdited = (edits?.versions?.length || 0) > 1;
+          const originalType = edits?.versions?.[0]?.type;
+          const wasEditedToTruth =
+            isEdited && rowType === "truth" &&
+            (originalType === "conditional" || originalType === "false");
+          const canEdit =
+            rowType === "false" || rowType === "conditional" || isEdited;
 
-              const nameDetail = nameCompareField
-                ? pair?.matchDetail?.[nameCompareField.key]
-                : null;
-              const professionalReason = isEmployerFallback
-                ? `Name matched using Employer/Organization fallback. ${nameDetail?.reason || ""}`
-                : "";
+          const nameDetail = nameCompareField
+            ? pair?.matchDetail?.[nameCompareField.key]
+            : null;
+          const professionalReason = isEmployerFallback
+            ? `Name matched using Employer/Organization fallback. ${nameDetail?.reason || ""}`
+            : "";
 
-              const editCount = isEdited ? edits.versions.length - 1 : 0;
-              const dataCellTooltip = isEdited
-                ? `Edited ${editCount} time${editCount !== 1 ? "s" : ""}. Click the History button to view full edit history.`
-                : professionalReason;
+          const editCount = isEdited ? edits.versions.length - 1 : 0;
+          const dataCellTooltip = isEdited
+            ? `Edited ${editCount} time${editCount !== 1 ? "s" : ""}. Click the History button to view full edit history.`
+            : professionalReason;
 
-              const infoCellStyle = wasEditedToTruth
-                ? { backgroundColor: "#14532d", color: "#bbf7d0", cursor: "help" }
-                : rowType === "conditional"
-                ? { backgroundColor: "#0009b5", color: "#ffffff", cursor: "help" }
-                : rowType === "false"
-                ? { backgroundColor: "#7f1d1d", color: "#fecaca" }
-                : undefined;
+          const infoCellStyle = wasEditedToTruth
+            ? { backgroundColor: "#14532d", color: "#bbf7d0", cursor: "help" }
+            : rowType === "conditional"
+            ? { backgroundColor: "#0009b5", color: "#ffffff", cursor: "help" }
+            : rowType === "false"
+            ? { backgroundColor: "#7f1d1d", color: "#fecaca" }
+            : undefined;
 
-              if (editingPairId === originalPair.id) {
-                return (
-                  <tr key={pair.id} className="editingRow">
-                    {leftPanel.headers.map((h) => (
-                      <td key={`el-${h}`} className="editCell">
-                        <input
-                          className="editInput"
-                          value={editDraft.left[h] ?? ""}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              left: { ...d.left, [h]: e.target.value },
-                            }))
-                          }
-                        />
-                      </td>
+          const isEditing = editingPairId === originalPair.id;
+          return { pair, originalPair, rowType, edits, isEdited, canEdit, dataCellTooltip, infoCellStyle, isEditing };
+        });
+
+        return (
+          <div className="compareResultsTableWrap">
+            <div className="compareTriPaneRow">
+              <div className="compareScrollPane comparePaneLeft" ref={leftPaneRef}>
+                <table className="compareSubTable">
+                  <colgroup>
+                    {leftPanel.headers.map((h) => <col key={`lc-${h}`} />)}
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th colSpan={leftPanel.headers.length}>{leftPanel.title || "Left"}</th>
+                    </tr>
+                    <tr>
+                      {leftPanel.headers.map((h) => <th key={`lh-${h}`}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pairMeta.map(({ pair, isEditing, infoCellStyle, dataCellTooltip }) => (
+                      isEditing ? (
+                        <tr key={`L-${pair.id}`} className="editingRow">
+                          {leftPanel.headers.map((h) => (
+                            <td key={`el-${h}`} className="editCell">
+                              <input
+                                className="editInput"
+                                value={editDraft.left[h] ?? ""}
+                                onChange={(e) =>
+                                  setEditDraft((d) => ({
+                                    ...d,
+                                    left: { ...d.left, [h]: e.target.value },
+                                  }))
+                                }
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ) : (
+                        <tr key={`L-${pair.id}`}>
+                          {leftPanel.headers.map((h) => (
+                            <td
+                              key={`l-${pair.id}-${h}`}
+                              style={infoCellStyle}
+                              onMouseEnter={(e) => showTooltip(e, dataCellTooltip)}
+                              onMouseMove={(e) => moveTooltip(e, dataCellTooltip)}
+                              onMouseLeave={hideTooltip}
+                            >
+                              {String(pair.leftRow?.[h] ?? "")}
+                            </td>
+                          ))}
+                        </tr>
+                      )
                     ))}
-                    <td className="compareSpacer" />
-                    {rightPanel.headers.map((h) => (
-                      <td key={`er-${h}`} className="editCell">
-                        <input
-                          className="editInput"
-                          value={editDraft.right[h] ?? ""}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              right: { ...d.right, [h]: e.target.value },
-                            }))
-                          }
-                        />
-                      </td>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="compareScrollPane comparePaneRight" ref={rightPaneRef}>
+                <table className="compareSubTable">
+                  <colgroup>
+                    {rightPanel.headers.map((h) => <col key={`rc-${h}`} />)}
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th colSpan={rightPanel.headers.length}>{rightPanel.title || "Right"}</th>
+                    </tr>
+                    <tr>
+                      {rightPanel.headers.map((h) => <th key={`rh-${h}`}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pairMeta.map(({ pair, isEditing, infoCellStyle, dataCellTooltip }) => (
+                      isEditing ? (
+                        <tr key={`R-${pair.id}`} className="editingRow">
+                          {rightPanel.headers.map((h) => (
+                            <td key={`er-${h}`} className="editCell">
+                              <input
+                                className="editInput"
+                                value={editDraft.right[h] ?? ""}
+                                onChange={(e) =>
+                                  setEditDraft((d) => ({
+                                    ...d,
+                                    right: { ...d.right, [h]: e.target.value },
+                                  }))
+                                }
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ) : (
+                        <tr key={`R-${pair.id}`}>
+                          {rightPanel.headers.map((h) => (
+                            <td
+                              key={`r-${pair.id}-${h}`}
+                              style={infoCellStyle}
+                              onMouseEnter={(e) => showTooltip(e, dataCellTooltip)}
+                              onMouseMove={(e) => moveTooltip(e, dataCellTooltip)}
+                              onMouseLeave={hideTooltip}
+                            >
+                              {String(pair.rightRow?.[h] ?? "")}
+                            </td>
+                          ))}
+                        </tr>
+                      )
                     ))}
-                    <td className="compareSpacer" />
-                    {visibleCompareFields.map((f) => {
-                      const result = liveDetail[f.key];
-                      return (
-                        <td key={`em-${f.key}`} className={compareBoolClass(result)}>
-                          {result?.ok ? "TRUE" : "FALSE"}
-                        </td>
-                      );
-                    })}
-                    <td>
-                      {amountCompareField
-                        ? amountDifference(
-                            editDraft.left,
-                            editDraft.right,
-                            amountCompareField.leftField,
-                            amountCompareField.rightField
-                          )
-                        : ""}
-                    </td>
-                    <td className="editActions">
-                      <button
-                        className="editSaveBtn"
-                        onClick={() => saveEdit(originalPair, pair)}
-                      >
-                        Save
-                      </button>
-                      <button className="editCancelBtn" onClick={cancelEdit}>
-                        Cancel
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }
+                  </tbody>
+                </table>
+              </div>
 
-              return (
-                <tr key={pair.id}>
-                  {leftPanel.headers.map((h) => (
-                    <td
-                      key={`l-${pair.id}-${h}`}
-                      style={infoCellStyle}
-                      onMouseEnter={(e) => showTooltip(e, dataCellTooltip)}
-                      onMouseMove={(e) => moveTooltip(e, dataCellTooltip)}
-                      onMouseLeave={hideTooltip}
-                    >
-                      {String(pair.leftRow?.[h] ?? "")}
-                    </td>
-                  ))}
+              <div className="comparePaneFixed" ref={matchPaneRef}>
+                <table className="compareSubTable">
+                  <thead>
+                    <tr>
+                      <th colSpan={visibleCompareFields.length + 2}>Do the records match?</th>
+                    </tr>
+                    <tr>
+                      {visibleCompareFields.map((f) => (
+                        <th
+                          key={`cf-${f.key}`}
+                          className="compareMatchJumpable"
+                          title={`Align ${f.label} on both panes`}
+                          onClick={() => jumpToField(f)}
+                        >
+                          {f.label}
+                        </th>
+                      ))}
+                      <th>Amount Diff</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pairMeta.map(({ pair, originalPair, edits, isEdited, canEdit, isEditing }) => (
+                      isEditing ? (
+                        <tr key={`M-${pair.id}`} className="editingRow">
+                          {visibleCompareFields.map((f) => {
+                            const result = liveDetail[f.key];
+                            return (
+                              <td key={`em-${f.key}`} className={compareBoolClass(result)}>
+                                {result?.ok ? "TRUE" : "FALSE"}
+                              </td>
+                            );
+                          })}
+                          <td>
+                            {amountCompareField
+                              ? amountDifference(
+                                  editDraft.left,
+                                  editDraft.right,
+                                  amountCompareField.leftField,
+                                  amountCompareField.rightField
+                                )
+                              : ""}
+                          </td>
+                          <td className="editActions">
+                            <button
+                              className="editSaveBtn"
+                              onClick={() => saveEdit(originalPair, pair)}
+                            >
+                              Save
+                            </button>
+                            <button className="editCancelBtn" onClick={cancelEdit}>
+                              Cancel
+                            </button>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr key={`M-${pair.id}`}>
+                          {visibleCompareFields.map((f) => {
+                            const result = pair.matchDetail?.[f.key];
+                            const isSpecialNameMatch =
+                              f.key === nameCompareField?.key &&
+                              result?.ok &&
+                              SOFT_NAME_MODES.has(result?.mode);
+                            const cellTooltip = isSpecialNameMatch
+                              ? `TRUE - ${result?.reason || "Name matched via fallback/partial"}`
+                              : result?.reason || "";
+                            return (
+                              <td
+                                key={`m-${pair.id}-${f.key}`}
+                                className={`${compareBoolClass(result)} compareMatchJumpable`}
+                                onMouseEnter={(e) => showTooltip(e, cellTooltip)}
+                                onMouseMove={(e) => moveTooltip(e, cellTooltip)}
+                                onMouseLeave={hideTooltip}
+                                onClick={() => jumpToField(f)}
+                                style={{ cursor: "pointer" }}
+                                title={cellTooltip ? undefined : `Align ${f.label} on both panes`}
+                              >
+                                {result?.ok ? "TRUE" : "FALSE"}
+                                {isSpecialNameMatch ? " *" : ""}
+                              </td>
+                            );
+                          })}
+                          <td>
+                            {amountCompareField
+                              ? amountDifference(
+                                  pair.leftRow,
+                                  pair.rightRow,
+                                  amountCompareField.leftField,
+                                  amountCompareField.rightField
+                                )
+                              : ""}
+                          </td>
+                          <td className="editActionCell">
+                            {canEdit && (
+                              <button
+                                className="editRowBtn"
+                                onClick={() => startEdit(pair)}
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {isEdited && (
+                              <button
+                                className="historyRowBtn"
+                                onClick={() => setHistoryModalVersions(edits.versions)}
+                              >
+                                History
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                  <td className="compareSpacer" />
-
-                  {rightPanel.headers.map((h) => (
-                    <td
-                      key={`r-${pair.id}-${h}`}
-                      style={infoCellStyle}
-                      onMouseEnter={(e) => showTooltip(e, dataCellTooltip)}
-                      onMouseMove={(e) => moveTooltip(e, dataCellTooltip)}
-                      onMouseLeave={hideTooltip}
-                    >
-                      {String(pair.rightRow?.[h] ?? "")}
-                    </td>
-                  ))}
-
-                  <td className="compareSpacer" />
-
-                  {visibleCompareFields.map((f) => {
-                    const result = pair.matchDetail?.[f.key];
-                    const isSpecialNameMatch =
-                      f.key === nameCompareField?.key &&
-                      result?.ok &&
-                      (result?.mode === "left_name_to_right_employer" ||
-                        result?.mode === "right_name_to_left_employer");
-                    const cellTooltip = isSpecialNameMatch
-                      ? `TRUE - Name matched using Employer/Organization fallback. ${result?.reason || ""}`
-                      : result?.reason || "";
-
-                    return (
-                      <td
-                        key={`m-${pair.id}-${f.key}`}
-                        className={compareBoolClass(result)}
-                        onMouseEnter={(e) => showTooltip(e, cellTooltip)}
-                        onMouseMove={(e) => moveTooltip(e, cellTooltip)}
-                        onMouseLeave={hideTooltip}
-                        style={{ cursor: cellTooltip ? "help" : "default" }}
-                      >
-                        {result?.ok ? "TRUE" : "FALSE"}
-                        {isSpecialNameMatch ? " *" : ""}
-                      </td>
-                    );
-                  })}
-
-                  <td>
-                    {amountCompareField
-                      ? amountDifference(
-                          pair.leftRow,
-                          pair.rightRow,
-                          amountCompareField.leftField,
-                          amountCompareField.rightField
-                        )
-                      : ""}
-                  </td>
-
-                  <td className="editActionCell">
-                    {canEdit && (
-                      <button
-                        className="editRowBtn"
-                        onClick={() => startEdit(pair)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                    {isEdited && (
-                      <button
-                        className="historyRowBtn"
-                        onClick={() => setHistoryModalVersions(edits.versions)}
-                      >
-                        History
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+            {compareSharedWidth > 0 && (
+              <div className="compareSharedScroll" ref={compareSharedScrollRef}>
+                <div
+                  className="compareSharedScrollInner"
+                  style={{ width: compareSharedWidth }}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {historyModalVersions && (
         <HistoryModal

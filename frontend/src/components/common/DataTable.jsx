@@ -6,11 +6,16 @@ export default function DataTable({
   getValue,
   renderHeader,
   emptyText = "No headers",
+  scrollRef,
+  hideScrollbar = false,
 }) {
   if (!headers.length) return <div className="tableEmpty">{emptyText}</div>;
 
   return (
-    <div className="tableWrap">
+    <div
+      className={`tableWrap${hideScrollbar ? " tableWrapNoScrollbar" : ""}`}
+      ref={scrollRef}
+    >
       <table className="dataTable">
         <thead>
           <tr>

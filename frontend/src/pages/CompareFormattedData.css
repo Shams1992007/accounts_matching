@@ -1,7 +1,13 @@
+/* Break out of the #root container (max-width: 1280px, 2rem side padding) so
+   the compare table can use the full viewport width. */
 .comparePage {
-  max-width: 1600px;
-  margin: 30px auto;
-  padding: 0 16px 40px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 16px;
+  margin-bottom: 24px;
+  padding: 0 12px 40px;
+  box-sizing: border-box;
 }
 
 .compareSimpleBox {

@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { isFieldRequired } from "./compareUtils";
+import { amountDifference, isFieldRequired } from "./compareUtils";
 
 function getFieldValue(row, fieldName) {
   if (!row || !fieldName) return "";
@@ -13,17 +13,24 @@ function getFieldValue(row, fieldName) {
   return "";
 }
 
-// Mirrors getRowType in CompareResultsTable — only visible fields drive the verdict.
+// Mirrors getRowType in CompareResultsTable — only visible fields drive the
+// verdict. Employer-fallback AND any partial-token name match downgrades the
+// row to Conditional Truth.
+const SOFT_NAME_MODES = new Set([
+  "left_name_to_right_employer",
+  "right_name_to_left_employer",
+  "name_to_name_partial",
+  "left_name_to_right_employer_partial",
+  "right_name_to_left_employer_partial",
+]);
+
 function getRowType(pair, visibleCompareFields) {
   const nameField = visibleCompareFields.find(f => f.label.toLowerCase().includes("name"));
   const nameDetail = nameField ? pair?.matchDetail?.[nameField.key] : null;
-  const isEmployerFallback =
-    nameDetail?.ok &&
-    (nameDetail?.mode === "left_name_to_right_employer" ||
-      nameDetail?.mode === "right_name_to_left_employer");
+  const isSoftNameMatch = nameDetail?.ok && SOFT_NAME_MODES.has(nameDetail?.mode);
   const allMatch = visibleCompareFields.every(f => pair.matchDetail?.[f.key]?.ok);
   if (!allMatch) return "false";
-  if (isEmployerFallback) return "conditional";
+  if (isSoftNameMatch) return "conditional";
   return "truth";
 }
 
@@ -73,7 +80,8 @@ export function buildExportData(finalResult, compareFields, leftHeaders, rightHe
   const q = (searchQuery || "").trim().toLowerCase();
   const rows = [];
   const visibleCompareFields = compareFields.filter(isFieldRequired);
-  const amountField = compareFields.find(f => f.key === "amount");
+  // Mirror the page's detection (CompareResultsTable): label substring, not key.
+  const amountField = compareFields.find(f => f.label?.toLowerCase().includes("amount"));
 
   if (activeTab === "unmatched") {
     finalResult.unmatchedLeft?.forEach(rowObj => {
@@ -119,9 +127,9 @@ export function buildExportData(finalResult, compareFields, leftHeaders, rightHe
       row[`__M_${f.label}`] = pair.matchDetail?.[f.key]?.ok ? "TRUE" : "FALSE";
     });
 
-    const al = Number(String(getFieldValue(pair.leftRow, amountField?.leftField || "Amount")).replace(/[$,]/g, ""));
-    const ar = Number(String(getFieldValue(pair.rightRow, amountField?.rightField || "Amount")).replace(/[$,]/g, ""));
-    row["__M_Amount Diff"] = (Number.isFinite(al) && Number.isFinite(ar)) ? (al - ar).toFixed(2) : "";
+    row["__M_Amount Diff"] = amountField
+      ? amountDifference(pair.leftRow, pair.rightRow, amountField.leftField, amountField.rightField)
+      : "";
 
     rows.push(row);
   });
