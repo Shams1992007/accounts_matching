@@ -69,11 +69,11 @@ router.put("/:importId/mappings/:panelKey", async (req, res) => {
       [importId, panelKey, fileSide, formatKey, JSON.stringify(mapping)]
     );
 
-    // Learn this mapping as the format's default so future imports pre-fill from it.
-    await pool.query(
-      `UPDATE formats SET default_mapping = $1::jsonb, updated_at = now() WHERE key = $2`,
-      [JSON.stringify(mapping), formatKey]
-    );
+    // NOTE: intentionally do NOT relearn the format's global default_mapping here.
+    // A per-import override must stay scoped to this import (persisted above in
+    // import_mappings). The format's default_mapping is a stable identity baseline
+    // that feeds auto-fill for *new* imports; letting one import's manual override
+    // rewrite it would leak that choice into every other file that uses this format.
 
     const r = await pool.query(
       `SELECT panel_key AS "panelKey", file_side AS "fileSide", format_key AS "formatKey", mapping

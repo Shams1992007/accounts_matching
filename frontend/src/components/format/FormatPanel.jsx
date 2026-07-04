@@ -5,6 +5,7 @@ import FormattedTable from "./FormattedTable";
 import {
   buildFormattedRows,
   compareFormattedRows,
+  detectFormatKey,
   getFormatSortOptions,
   getSavedPanel,
 } from "../../utils/formatUtils";
@@ -43,6 +44,9 @@ export default function FormatPanel({
 
   const lastSentRef = useRef("");
   const lastRowsFetchKeyRef = useRef("");
+  const autoDetectedRef = useRef("");
+  const autoFillKeyRef = useRef("");
+  const userEditedRef = useRef(false);
 
   // Load formats once on mount
   useEffect(() => {
@@ -74,6 +78,9 @@ export default function FormatPanel({
     setMsg("");
     lastSentRef.current = "";
     lastRowsFetchKeyRef.current = "";
+    autoDetectedRef.current = "";
+    autoFillKeyRef.current = "";
+    userEditedRef.current = false;
   }, [
     importMeta?.importId,
     importMeta?.savedMappings,
@@ -86,6 +93,7 @@ export default function FormatPanel({
   const sourceHeaders = file?.headers || [];
   const activeFormat = formats.find((f) => f.key === formatKey) || null;
   const formatHeaders = activeFormat?.headers || [];
+  const formatLabels = activeFormat?.labels || [];
 
   const totalPages = useMemo(() => {
     const total = file?.rowCount || 0;
@@ -94,23 +102,72 @@ export default function FormatPanel({
 
   const canShow = formatHeaders.length > 0 && formatHeaders.every((h) => mapping?.[h]);
 
-  // Pre-fill the mapping from the format's learned default when there is no saved
-  // mapping for this import yet. Only fills columns whose default source-column is
-  // actually present in this file. Dropdowns stay editable so the user can override.
+  // Auto-detect the target format from the file's headers, so the right format is
+  // picked no matter which slot (A/B) each file was uploaded into. Only runs when
+  // there is no saved mapping for this panel (a saved mapping always wins), and at
+  // most once per (import, panel, file) — so a manual dropdown change is never
+  // overridden. Switching files re-detects for the newly chosen file.
+  useEffect(() => {
+    if (formatsLoading || formats.length === 0) return;
+    if (!file?.fileId) return;
+    if (getSavedPanel(importMeta, panelKey)?.formatKey) return;
+
+    const detectKey = `${importMeta?.importId}::${panelKey}::${fileSide}`;
+    if (autoDetectedRef.current === detectKey) return;
+    autoDetectedRef.current = detectKey;
+
+    const best = detectFormatKey(sourceHeaders, formats, formatKey);
+    if (best && best !== formatKey) {
+      // The auto-fill effect (keyed on formatKey) re-fills for the new format.
+      setFormatKey(best);
+      setConfirmed(false);
+    }
+  }, [
+    formatsLoading,
+    formats,
+    file?.fileId,
+    fileSide,
+    sourceHeaders,
+    importMeta,
+    panelKey,
+    formatKey,
+  ]);
+
+  // Pre-fill the mapping from the format's learned default (or an identity match)
+  // when there is no saved mapping yet. Keyed on formatKey+fileSide so it re-fills
+  // when auto-detect switches the format after the first render, but never once the
+  // user has hand-edited a mapping (userEditedRef) or a saved mapping is in use.
   useEffect(() => {
     if (formatsLoading) return;
     if (confirmed) return; // a saved mapping is already in use
+    if (userEditedRef.current) return; // don't clobber manual edits
     if (!activeFormat) return;
-    if (Object.keys(mapping || {}).length > 0) return; // already has selections
+
+    const fillKey = `${formatKey}::${fileSide}`;
+    if (autoFillKeyRef.current === fillKey) return; // already filled for this format+file
+    autoFillKeyRef.current = fillKey;
+
     const def = activeFormat.defaultMapping || {};
     const src = new Set(sourceHeaders);
+    // Case-insensitive lookup so an identity match survives casing differences
+    // (e.g. format header "Payment Type" vs source column "Payment type").
+    const lowerSrc = new Map(
+      sourceHeaders.map((s) => [String(s).trim().toLowerCase(), s])
+    );
     const next = {};
     for (const h of formatHeaders) {
       const col = def[h];
-      if (col && src.has(col)) next[h] = col;
+      if (col && src.has(col)) {
+        next[h] = col;
+        continue;
+      }
+      // Fall back to an identity match: when the format header names the same
+      // column as the file (the file already is this format), map it to itself.
+      const ident = lowerSrc.get(String(h).trim().toLowerCase());
+      if (ident) next[h] = ident;
     }
-    if (Object.keys(next).length > 0) setMapping(next);
-  }, [formatsLoading, confirmed, activeFormat, sourceHeaders, formatHeaders, mapping]);
+    setMapping(next);
+  }, [formatsLoading, confirmed, activeFormat, formatKey, fileSide, sourceHeaders, formatHeaders]);
 
   const sortOptions = useMemo(() => {
     return getFormatSortOptions(formatHeaders);
@@ -210,6 +267,7 @@ export default function FormatPanel({
       formatKey,
       fileName: file?.name || "",
       headers: formatHeaders,
+      labels: formatLabels,
       rows: formattedRows,
       mapping,
     };
@@ -221,6 +279,7 @@ export default function FormatPanel({
       formatKey,
       fileName: file?.name || "",
       headers: formatHeaders,
+      labels: formatLabels,
       mapping,
       rowCount: formattedRows.length,
       firstRowKey: formattedRows[0]?.__rowKey ?? null,
@@ -243,6 +302,7 @@ export default function FormatPanel({
     formatKey,
     file?.name,
     formatHeaders,
+    formatLabels,
     mapping,
     onFormattedChange,
     sortField,
@@ -278,6 +338,7 @@ export default function FormatPanel({
               setErr("");
               lastSentRef.current = "";
               lastRowsFetchKeyRef.current = "";
+              userEditedRef.current = false; // let auto-detect/fill run for the new file
             }}
           >
             <option value="A">File A — {importMeta?.fileA?.name}</option>
@@ -299,6 +360,7 @@ export default function FormatPanel({
               setErr("");
               lastSentRef.current = "";
               lastRowsFetchKeyRef.current = "";
+              userEditedRef.current = false; // re-enable auto-fill for the picked format
             }}
           >
             {formats.map((f) => (
@@ -326,6 +388,7 @@ export default function FormatPanel({
             setMsg("");
             setErr("");
             lastSentRef.current = "";
+            userEditedRef.current = true; // stop auto-fill from overwriting manual edits
           }}
         />
       ))}

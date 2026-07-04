@@ -9,10 +9,12 @@ import {
   applyManualPairs,
   getDefaultCompareFields,
   scorePair,
+  withEmployerFields,
 } from "../utils/compareUtils";
 import "./CompareFormattedData.css";
 import { exportCSV, exportExcel } from "../utils/exportUtils";
 import { fetchRowEdits } from "../services/rowEditsApi";
+import { fetchFormats } from "../services/formatsApi";
 import { fetchCompareConfig, saveCompareConfig } from "../services/compareConfigApi";
 import { runCompare } from "../services/compareApi";
 
@@ -39,6 +41,19 @@ export default function CompareFormattedData({
   });
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState("");
+  // formatKey → labels[]. Used to recover a panel's Employer/Organization column
+  // when the panel came from a stale sessionStorage cache that predates `labels`.
+  const [labelsByFormat, setLabelsByFormat] = useState({});
+
+  useEffect(() => {
+    fetchFormats()
+      .then((formats) => {
+        const map = {};
+        for (const f of formats) map[f.key] = f.labels || [];
+        setLabelsByFormat(map);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!importMeta?.importId) return;
@@ -113,6 +128,21 @@ export default function CompareFormattedData({
     } catch {}
   }, [compareFields, importMeta?.importId]);
 
+  // Compare fields used for *matching* — same as the (config-persisted)
+  // compareFields, plus the resolved per-panel Employer/Organization field names
+  // on the Name field so the employer fallback works when a format labels that
+  // column differently (e.g. QBO stores it under "Description"). Raw
+  // `compareFields` is still what the Setup panel edits and what gets saved.
+  const matchFields = useMemo(() => {
+    // Prefer labels carried on the panel; fall back to the format definition for
+    // panels restored from an older cache that lacks them.
+    const withLabels = (panel) =>
+      panel && !(panel.labels?.length)
+        ? { ...panel, labels: labelsByFormat[panel.formatKey] || [] }
+        : panel;
+    return withEmployerFields(compareFields, withLabels(leftPanel), withLabels(rightPanel));
+  }, [compareFields, leftPanel, rightPanel, labelsByFormat]);
+
   const handleSaveAsDefault = useCallback(async () => {
     const leftFormat = leftPanel?.formatKey;
     const rightFormat = rightPanel?.formatKey;
@@ -146,7 +176,7 @@ export default function CompareFormattedData({
     setCompareLoading(true);
     setCompareError("");
 
-    runCompare(importId, leftPanel, rightPanel, compareFields)
+    runCompare(importId, leftPanel, rightPanel, matchFields)
       .then((result) => {
         if (cancelled) return;
         setBaseResult({
@@ -174,7 +204,7 @@ export default function CompareFormattedData({
     rightPanel?.mapping,
     leftPanel?.headers,
     rightPanel?.headers,
-    compareFields,
+    matchFields,
   ]);
 
   const finalResult = useMemo(() => {
@@ -183,30 +213,30 @@ export default function CompareFormattedData({
       unmatchedLeft: baseResult.unmatchedLeft,
       unmatchedRight: baseResult.unmatchedRight,
       manualPairs,
-      compareFields,
+      compareFields: matchFields,
     });
     return addStandalonePairs({
       matchedRows: afterManual.matchedRows,
       unmatchedLeft: afterManual.unmatchedLeft,
       unmatchedRight: afterManual.unmatchedRight,
-      compareFields,
+      compareFields: matchFields,
     });
-  }, [baseResult, manualPairs, compareFields]);
+  }, [baseResult, manualPairs, matchFields]);
 
   const exportResult = useMemo(() => {
     const editedMatchedRows = finalResult.matchedRows.map((pair) => {
       const edits = rowEdits[pair.id];
       if (!edits?.versions?.length) return pair;
       const last = edits.versions[edits.versions.length - 1];
-      const { matches, detail } = scorePair(last.leftRow, last.rightRow, compareFields);
+      const { matches, detail } = scorePair(last.leftRow, last.rightRow, matchFields);
       return { ...pair, leftRow: last.leftRow, rightRow: last.rightRow, matchDetail: detail, matchedCount: matches };
     });
     return { ...finalResult, matchedRows: editedMatchedRows };
-  }, [finalResult, rowEdits, compareFields]);
+  }, [finalResult, rowEdits, matchFields]);
 
   const handleExportCSV = () => {
     try {
-      exportCSV(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
+      exportCSV(exportResult, matchFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
     } catch (err) {
       console.error("CSV Export Error:", err);
       alert("Failed to export CSV: " + err.message);
@@ -215,7 +245,7 @@ export default function CompareFormattedData({
 
   const handleExportExcel = async () => {
     try {
-      await exportExcel(exportResult, compareFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
+      await exportExcel(exportResult, matchFields, leftPanel, rightPanel, rowEdits, activeTab, rowFilter, null, { searchQuery, hideStandalone });
     } catch (err) {
       console.error("Excel Export Error:", err);
       alert("Failed to export Excel: " + err.message);
@@ -300,7 +330,7 @@ export default function CompareFormattedData({
           importId={importMeta?.importId}
           leftPanel={leftPanel}
           rightPanel={rightPanel}
-          compareFields={compareFields}
+          compareFields={matchFields}
           matchedRows={finalResult.matchedRows}
           rowEdits={rowEdits}
           setRowEdits={setRowEdits}
@@ -317,7 +347,7 @@ export default function CompareFormattedData({
         <CompareUnmatchedPanel
           leftPanel={leftPanel}
           rightPanel={rightPanel}
-          compareFields={compareFields}
+          compareFields={matchFields}
           unmatchedLeft={finalResult.unmatchedLeft}
           unmatchedRight={finalResult.unmatchedRight}
           manualPairs={manualPairs}

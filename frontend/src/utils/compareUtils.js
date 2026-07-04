@@ -120,12 +120,23 @@ function sharesNameToken(a, b) {
   return null;
 }
 
-export function namesMatchWithFallback(rowA, rowB, leftField, rightField) {
+// The employer/organization column is not always literally named
+// "Employer/Organization" — e.g. the QBO format stores it under the header
+// "Description". Callers pass the resolved per-panel field names; both default
+// to "Employer/Organization" so older callers keep working.
+export function namesMatchWithFallback(
+  rowA,
+  rowB,
+  leftField,
+  rightField,
+  leftEmployerField = "Employer/Organization",
+  rightEmployerField = "Employer/Organization"
+) {
   const leftName = normalizeNameLike(getFieldValue(rowA, leftField));
   const rightName = normalizeNameLike(getFieldValue(rowB, rightField));
 
-  const rightEmployer = normalizeNameLike(getFieldValue(rowB, "Employer/Organization"));
-  const leftEmployer = normalizeNameLike(getFieldValue(rowA, "Employer/Organization"));
+  const rightEmployer = normalizeNameLike(getFieldValue(rowB, rightEmployerField));
+  const leftEmployer = normalizeNameLike(getFieldValue(rowA, leftEmployerField));
 
   // Pass 1: strict equality (preferred — keeps Truth highlights clean).
   if (leftName && rightName && leftName === rightName) {
@@ -182,7 +193,15 @@ export function namesMatchWithFallback(rowA, rowB, leftField, rightField) {
 }
 
 export function valuesEqual(fieldType, a, b, options = {}) {
-  const { rowA = null, rowB = null, leftField = "", rightField = "", label = "" } = options;
+  const {
+    rowA = null,
+    rowB = null,
+    leftField = "",
+    rightField = "",
+    label = "",
+    leftEmployerField = "Employer/Organization",
+    rightEmployerField = "Employer/Organization",
+  } = options;
 
   if (fieldType === "date") {
     const na = normalizeDate(a);
@@ -242,7 +261,14 @@ export function valuesEqual(fieldType, a, b, options = {}) {
   }
 
   if (lower(label) === "name" && rowA && rowB) {
-    return namesMatchWithFallback(rowA, rowB, leftField, rightField);
+    return namesMatchWithFallback(
+      rowA,
+      rowB,
+      leftField,
+      rightField,
+      leftEmployerField,
+      rightEmployerField
+    );
   }
 
   const na = normalizeText(a);
@@ -264,6 +290,34 @@ export function valuesEqual(fieldType, a, b, options = {}) {
 
 export function getFieldValue(row, fieldName) {
   return row?.[fieldName] ?? "";
+}
+
+// Resolve which projected header holds the Employer/Organization value for a
+// panel. Rows are keyed by *format header*, but the employer column's header
+// varies per format (QBO → "Description", LGL → "Employer/Organization"). We
+// find it via the format's parallel `labels` array (label "Employer/Organization"),
+// then fall back to a header literally named that, then to the literal default.
+export function resolveEmployerField(panel) {
+  const labels = panel?.labels || [];
+  const headers = panel?.headers || [];
+  const idx = labels.findIndex((l) => lower(l) === "employer/organization");
+  if (idx >= 0 && headers[idx]) return headers[idx];
+  const direct = headers.find((h) => lower(h) === "employer/organization");
+  return direct || "Employer/Organization";
+}
+
+// Attach the resolved per-panel employer field names to the Name compare field
+// so the name fallback (Name ↔ Employer/Organization, either direction) works
+// regardless of how each format labels its employer column. Other fields are
+// left untouched. Extra props on the Name field are inert for display/export.
+export function withEmployerFields(compareFields = [], leftPanel, rightPanel) {
+  const leftEmployerField = resolveEmployerField(leftPanel);
+  const rightEmployerField = resolveEmployerField(rightPanel);
+  return compareFields.map((f) =>
+    lower(f.label) === "name"
+      ? { ...f, leftEmployerField, rightEmployerField }
+      : f
+  );
 }
 
 export function getComparisonFieldType(label = "") {
@@ -290,6 +344,8 @@ export function scorePair(rowA, rowB, compareFields) {
       leftField: f.leftField,
       rightField: f.rightField,
       label: f.label,
+      leftEmployerField: f.leftEmployerField,
+      rightEmployerField: f.rightEmployerField,
     });
 
     detail[f.key] = result;
