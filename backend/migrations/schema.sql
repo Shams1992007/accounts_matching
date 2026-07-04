@@ -1,4 +1,4 @@
--- Full database schema for accounts_matching
+-- Full database schema for bookkeeping_review
 -- Safe to run on a fresh database or an existing one (all statements use IF NOT EXISTS / ON CONFLICT DO NOTHING).
 -- The backend also runs this automatically on startup via initDb(), so manual execution is optional.
 

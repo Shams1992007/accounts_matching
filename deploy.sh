@@ -14,6 +14,6 @@ echo "==> Building frontend..."
 npm run build && cd ..
 
 echo "==> Restarting backend..."
-pm2 restart accounts-backend
+pm2 restart bookkeeping-backend
 
 echo "==> Done. App is live at http://15.235.216.232:3001"

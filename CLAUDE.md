@@ -1,4 +1,4 @@
-# Accounts Matching
+# Bookkeeping Review
 
 Reconciles two accounting files (CSV/XLSX). Upload File A and File B, map each to a named **format**, app finds matches between them. Unmatched rows can be paired manually. Exports CSV or Excel.
 
@@ -9,12 +9,12 @@ Typical use: matching a bank export (QBO) against a donations ledger (LGL).
 | | |
 |---|---|
 | Frontend | http://15.235.216.232:3001 (nginx → `frontend/dist/`) |
-| Backend  | :5020, PM2 name `accounts-backend` |
-| Nginx    | `/etc/nginx/sites-enabled/accounts-matching` — proxies `/api/` and `/health` to `127.0.0.1:5020`, serves `frontend/dist/` for everything else (SPA fallback to `index.html`) |
+| Backend  | :5020, PM2 name `bookkeeping-backend` |
+| Nginx    | `/etc/nginx/sites-enabled/bookkeeping-review` — proxies `/api/` and `/health` to `127.0.0.1:5020`, serves `frontend/dist/` for everything else (SPA fallback to `index.html`) |
 
 ```bash
 cd frontend && npm run build               # nginx serves dist/ immediately
-pm2 restart accounts-backend               # after backend change
+pm2 restart bookkeeping-backend            # after backend change
 ```
 
 ## Stack
@@ -105,7 +105,7 @@ Normalization (`compareUtils.js`):
 - **Amounts** — strip `$,`, parse float, compare with ±1e-6 tolerance.
 - **Dates** — parse `m/d/yy(yy)`; 2-digit years 70–99 → 1900s, 00–69 → 2000s; fallback to `Date.parse`.
 - **Category** — strip leading codes (`4007 Individuals` → `Individuals`), extract tail from colon chains (`A:B:C` → `C`), known-aliases map, substring-contains as last resort.
-- **Name** — direct match, then employer fallback: `leftName == rightEmployer` or `rightName == leftEmployer`. `matchDetail.mode` records `name_to_name`, `left_name_to_right_employer`, or `right_name_to_left_employer`.
+- **Name** — direct match, then employer fallback: `leftName == rightEmployer` or `rightName == leftEmployer` (both surface as Conditional Truth). `matchDetail.mode` records `name_to_name`, `left_name_to_right_employer`, or `right_name_to_left_employer` (plus `*_partial` shared-word variants). The Employer/Organization column is **resolved per panel** — the projected row is keyed by format header, and that header varies (QBO stores it under `Description`, LGL under `Employer/Organization`). `resolveEmployerField(panel)` finds it via the format's parallel `labels` array (label `Employer/Organization`); `withEmployerFields()` attaches the resolved `leftEmployerField`/`rightEmployerField` onto the Name compare field before matching (in `CompareFormattedData`, as `matchFields`), so the fallback fires regardless of how each format names the column. Do **not** re-hardcode `"Employer/Organization"` in `namesMatchWithFallback`. Panels carry `labels` in their payload (`FormatPanel`); for stale caches that predate it, labels are recovered from the `/api/formats` definition.
 - **Text (default)** — case-insensitive, whitespace-normalized.
 
 **Persistence:** Save-as-default stores the config per format pair in `compare_configs`. `compare_fields[].required` is the source of truth. `minimum_match_count` is kept in the schema and written as the count of visible (Required) columns purely as a courtesy for older clients — **the matcher no longer reads it**, it uses the hardcoded `MIN_MATCHES_FOR_PAIR = 2`. sessionStorage caches per import.
